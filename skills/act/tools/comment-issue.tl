@@ -7,52 +7,52 @@ local cio = require("cosmic.io")
 local fs = require("cosmic.fs")
 local unix = require("cosmo.unix")
 
-local function run(argv: {string}): boolean, string, number
-   local h, err = child.spawn(argv, {
-      env = unix.environ() as {string},
-      stderr = 1,
-   })
-   if not h then
-      return false, err or "spawn failed", -1
-   end
-   return h:read()
+local function run(argv: {string}): boolean | string, string, number
+  local h, err = child.spawn(argv, {
+    env = unix.environ() as {string},
+    stderr = 1,
+  })
+  if not h then
+    return false, err or "spawn failed", -1
+  end
+  return h:read()
 end
 
 return {
-   name = "comment_issue",
-   description = "Post a comment on a GitHub issue.",
-   input_schema = {
-      type = "object",
-      properties = {
-         issue_url = {type = "string", description = "Full GitHub issue URL"},
-         body = {type = "string", description = "Comment body (markdown)"},
-      },
-      required = {"issue_url", "body"},
-   },
-   execute = function(input: {string:any}): string
-      local url = input.issue_url as string
-      local body = input.body as string
+  name = "comment_issue",
+  description = "Post a comment on a GitHub issue.",
+  input_schema = {
+    type = "object",
+    properties = {
+      issue_url = {type = "string", description = "Full GitHub issue URL"},
+      body = {type = "string", description = "Comment body (markdown)"},
+    },
+    required = {"issue_url", "body"},
+  },
+  execute = function(input: {string: any}): string
+    local url = input.issue_url as string
+    local body = input.body as string
 
-      if not url or url == "" then
-         return "error: issue_url required"
-      end
-      if not body or body == "" then
-         return "error: body required"
-      end
+    if not url or url == "" then
+      return "error: issue_url required"
+    end
+    if not body or body == "" then
+      return "error: body required"
+    end
 
-      local fd, tmp = fs.mkstemp("/tmp/comment-XXXXXX")
-      if not fd then
-         return "error: could not create temp file"
-      end
-      unix.close(fd)
-      cio.barf(tmp, body)
+    local fd, tmp = fs.mkstemp("/tmp/comment-XXXXXX")
+    if not fd then
+      return "error: could not create temp file"
+    end
+    unix.close(fd)
+    cio.barf(tmp, body)
 
-      local ok, out, code = run({"gh", "issue", "comment", url, "--body-file", tmp})
-      fs.unlink(tmp)
+    local ok, out, code = run({"gh", "issue", "comment", url, "--body-file", tmp})
+    fs.unlink(tmp)
 
-      if not ok then
-         return "error: gh failed (exit " .. tostring(code) .. "): " .. (out or "")
-      end
-      return "ok"
-   end,
+    if not ok then
+      return "error: gh failed (exit " .. tostring(code) .. "): " .. (out or "")
+    end
+    return "ok"
+  end,
 }

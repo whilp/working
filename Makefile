@@ -44,11 +44,80 @@ $(ah):
 	@echo "$(ah_sha)  $@" | sha256sum -c - >/dev/null
 	@chmod +x $@
 
+# sources
+tl_srcs := $(shell find skills -name '*.tl' 2>/dev/null)
+
+TL_PATH := /zip/.lua/?.tl;/zip/.lua/?/init.tl;/zip/.lua/types/?.d.tl;/zip/.lua/types/?/init.d.tl
+
+# type checking
+all_type_checks := $(patsubst %,$(o)/%.teal.ok,$(tl_srcs))
+
+$(o)/%.tl.teal.ok: %.tl $(cosmic)
+	@mkdir -p $(@D)
+	@if TL_PATH='$(TL_PATH)' $(cosmic) --check-types "$<" >/dev/null 2>$@.err; then \
+		echo "pass" > $@; \
+	else \
+		echo "FAIL" > $@; \
+		cat $@.err >> $@; \
+	fi; \
+	rm -f $@.err
+
+.PHONY: check-types
+check-types: $(all_type_checks)
+	@fail=0; total=0; \
+	for f in $(all_type_checks); do \
+		total=$$((total + 1)); \
+		src=$$(echo "$$f" | sed 's|^$(o)/||; s|\.teal\.ok$$||'); \
+		if grep -q "^pass" "$$f"; then \
+			echo "  ✓ $$src"; \
+		else \
+			echo "  ✗ $$src"; sed -n '2,$$p' "$$f" | sed 's/^/    /'; \
+			fail=$$((fail + 1)); \
+		fi; \
+	done; \
+	echo ""; echo "types: $$total checked, $$fail failed"; \
+	[ $$fail -eq 0 ]
+
+# format checking
+all_fmt_checks := $(patsubst %,$(o)/%.fmt.ok,$(tl_srcs))
+
+$(o)/%.tl.fmt.ok: %.tl $(cosmic)
+	@mkdir -p $(@D)
+	@if diff -q <(cat "$<") <($(cosmic) --format "$<") >/dev/null 2>&1; then \
+		echo "pass" > $@; \
+	else \
+		echo "FAIL" > $@; \
+		diff -u "$<" <($(cosmic) --format "$<") >> $@ 2>/dev/null || true; \
+	fi
+
+.PHONY: check-format
+check-format: $(all_fmt_checks)
+	@fail=0; total=0; \
+	for f in $(all_fmt_checks); do \
+		total=$$((total + 1)); \
+		src=$$(echo "$$f" | sed 's|^$(o)/||; s|\.fmt\.ok$$||'); \
+		if grep -q "^pass" "$$f"; then \
+			echo "  ✓ $$src"; \
+		else \
+			echo "  ✗ $$src"; \
+			fail=$$((fail + 1)); \
+		fi; \
+	done; \
+	echo ""; echo "format: $$total checked, $$fail failed"; \
+	[ $$fail -eq 0 ]
+
+# ci: type checks + format checks
+.PHONY: ci
+ci: check-types check-format
+
 .PHONY: help
 help:
 	@echo "Usage: make [target]"
 	@echo ""
 	@echo "Targets:"
+	@echo "  ci                  Run type checks and format checks"
+	@echo "  check-types         Run teal type checker on all .tl files"
+	@echo "  check-format        Check formatting on all .tl files"
 	@echo "  work                Run full work loop (pick -> plan -> do -> check -> act)"
 	@echo "  pick                Pick an issue (REPO=owner/repo)"
 	@echo "  clone               Clone repo and checkout work branch"
