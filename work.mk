@@ -4,9 +4,14 @@
 #
 # phases:
 #   pick    select an issue to work on
+#   clone   clone target repo and check out work branch
 
 REPO ?=
 export PATH := $(CURDIR)/$(o)/bin:$(PATH)
+
+# target repo clone
+repo_dir := $(o)/repo
+default_branch = $(shell git -C $(repo_dir) symbolic-ref refs/remotes/origin/HEAD 2>/dev/null | sed 's|refs/remotes/||')
 
 # --- pick ---
 
@@ -27,3 +32,18 @@ $(issue): $(ah) $(cosmic)
 		--tool "bash=" \
 		--skill pick \
 		<<< "REPO=$(REPO)"
+
+# --- clone ---
+
+branch = $(shell jq -r .branch $(issue) 2>/dev/null)
+
+$(repo_dir)/.git:
+	@echo "==> clone $(REPO)"
+	@gh repo clone $(REPO) $(repo_dir)
+
+.PHONY: clone
+clone: $(repo_dir)/.git $(issue)
+	@echo "==> fetch"
+	@git -C $(repo_dir) fetch origin
+	@echo "==> checkout $(branch)"
+	@git -C $(repo_dir) checkout -B $(branch) $(default_branch)
