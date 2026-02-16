@@ -15,8 +15,8 @@ You are selecting the next issue to work on from a GitHub repository.
 
 1. Run `ensure_labels` with `repo` set to REPO.
 2. Run `count_open_prs` with `repo` set to REPO. If more than 4, write `o/pick/issue.json` with `{"error": "pr limit"}` and stop.
-3. Run `list_issues` with `repo` set to REPO to get open todo issues.
-4. Analyze the issues. For each, assess:
+3. Run `list_issues` with `repo` set to REPO to get open issues (returns issues labeled `todo` plus issues filed by repo collaborators).
+4. Analyze the issues. Prefer issues labeled `todo` — collaborator-filed issues without `todo` are lower priority candidates. For each, assess:
    - **priority**: p0 > p1 > p2 > unlabeled (check labels array)
    - **age**: older issues first (createdAt)
    - **clarity**: is the issue specific enough to plan and execute?
