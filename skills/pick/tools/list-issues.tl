@@ -2,6 +2,7 @@
 --
 -- module tool: returns a Tool record for ah to load via -t
 
+local child = require("cosmic.child")
 local json = require("cosmic.json")
 
 return {
@@ -20,27 +21,21 @@ return {
          return "error: repo argument required"
       end
 
-      local cmd = table.concat({
+      local h = child.spawn({
          "gh", "issue", "list",
          "--repo", repo,
          "--label", "todo",
          "--state", "open",
          "--json", "number,title,body,url,labels,createdAt",
          "--limit", "100",
-      }, " ")
+      })
+      local ok, out, code = h:read()
 
-      local p = io.popen(cmd .. " 2>&1")
-      if not p then
-         return "error: failed to run gh"
-      end
-
-      local out = p:read("*a")
-      local ok = p:close() as boolean
       if not ok then
-         return "error: gh failed: " .. (out or "")
+         return "error: gh failed (exit " .. tostring(code) .. "): " .. (out or "")
       end
 
-      local issues = json.decode(out)
+      local issues = json.decode(out or "[]")
       if not issues then
          return "error: failed to parse issues json"
       end

@@ -2,6 +2,8 @@
 --
 -- module tool: returns a Tool record for ah to load via -t
 
+local cio = require("cosmic.io")
+
 return {
    name = "read_file",
    description = "Read the contents of a file and return it as a string.",
@@ -18,13 +20,10 @@ return {
          return "error: path required"
       end
 
-      local f = io.open(path, "r")
-      if not f then
-         return "error: could not open " .. path
+      local content, err = cio.slurp(path)
+      if not content then
+         return "error: " .. (err or "could not read " .. path)
       end
-
-      local content = f:read("*a")
-      f:close()
-      return content or ""
+      return content
    end,
 }

@@ -2,6 +2,11 @@
 --
 -- module tool: returns a Tool record for ah to load via -t
 
+local child = require("cosmic.child")
+local cio = require("cosmic.io")
+local fs = require("cosmic.fs")
+local unix = require("cosmo.unix")
+
 return {
    name = "create_pr",
    description = "Create a pull request on a GitHub repository. Returns the PR URL on success.",
@@ -25,36 +30,29 @@ return {
       if not branch or branch == "" then return "error: branch required" end
       if not title or title == "" then return "error: title required" end
 
-      -- write body to temp file to avoid shell escaping issues
-      local tmp_body = os.tmpname()
-      local fb = io.open(tmp_body, "w")
-      if not fb then
+      local fd, tmp = fs.mkstemp("/tmp/pr-body-XXXXXX")
+      if not fd then
          return "error: could not create temp file"
       end
-      fb:write(body or "")
-      fb:close()
+      unix.close(fd)
+      cio.barf(tmp, body or "")
 
-      -- escape single quotes in title for shell
-      local safe_title = title:gsub("'", "'\\''")
-
-      local cmd = "gh pr create --repo '" .. repo .. "' --head '" .. branch .. "' --title '" .. safe_title .. "' --body-file '" .. tmp_body .. "' 2>&1"
-      local p = io.popen(cmd)
-      if not p then
-         os.remove(tmp_body)
-         return "error: failed to run gh"
-      end
-
-      local out = p:read("*a")
-      local ok = p:close() as boolean
-      os.remove(tmp_body)
+      local h = child.spawn({
+         "gh", "pr", "create",
+         "--repo", repo,
+         "--head", branch,
+         "--title", title,
+         "--body-file", tmp,
+      })
+      local ok, out, code = h:read()
+      fs.unlink(tmp)
 
       if not ok then
          if out and out:find("already exists") then
             return "ok: pr already exists"
          end
-         return "error: gh failed: " .. (out or "")
+         return "error: gh failed (exit " .. tostring(code) .. "): " .. (out or "")
       end
-
       return "ok: " .. (out or ""):gsub("%s+$", "")
    end,
 }

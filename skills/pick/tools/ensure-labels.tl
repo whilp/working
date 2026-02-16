@@ -2,6 +2,8 @@
 --
 -- module tool: returns a Tool record for ah to load via -t
 
+local child = require("cosmic.child")
+
 return {
    name = "ensure_labels",
    description = "Ensure required work labels (todo, doing, done, failed) exist on a GitHub repository.",
@@ -20,7 +22,8 @@ return {
 
       local labels = {"todo", "doing", "done", "failed"}
       for _, label in ipairs(labels) do
-         os.execute("gh label create " .. label .. " --repo " .. repo .. " --force 2>/dev/null")
+         local h = child.spawn({"gh", "label", "create", label, "--repo", repo, "--force"})
+         h:wait()
       end
 
       return "ok"

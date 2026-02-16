@@ -2,6 +2,11 @@
 --
 -- module tool: returns a Tool record for ah to load via -t
 
+local child = require("cosmic.child")
+local cio = require("cosmic.io")
+local fs = require("cosmic.fs")
+local unix = require("cosmo.unix")
+
 return {
    name = "comment_issue",
    description = "Post a comment on a GitHub issue.",
@@ -24,29 +29,20 @@ return {
          return "error: body required"
       end
 
-      -- write body to temp file to avoid shell escaping issues
-      local tmp = os.tmpname()
-      local f = io.open(tmp, "w")
-      if not f then
+      local fd, tmp = fs.mkstemp("/tmp/comment-XXXXXX")
+      if not fd then
          return "error: could not create temp file"
       end
-      f:write(body)
-      f:close()
+      unix.close(fd)
+      cio.barf(tmp, body)
 
-      local p = io.popen("gh issue comment '" .. url .. "' --body-file '" .. tmp .. "' 2>&1")
-      if not p then
-         os.remove(tmp)
-         return "error: failed to run gh"
-      end
-
-      local out = p:read("*a")
-      local ok = p:close() as boolean
-      os.remove(tmp)
+      local h = child.spawn({"gh", "issue", "comment", url, "--body-file", tmp})
+      local ok, out, code = h:read()
+      fs.unlink(tmp)
 
       if not ok then
-         return "error: gh failed: " .. (out or "")
+         return "error: gh failed (exit " .. tostring(code) .. "): " .. (out or "")
       end
-
       return "ok"
    end,
 }
