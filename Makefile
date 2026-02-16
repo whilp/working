@@ -45,8 +45,9 @@ $(ah):
 	@chmod +x $@
 
 # sources
-tl_srcs := $(shell find skills -name '*.tl' ! -name 'test_*' 2>/dev/null)
-tl_tests := $(shell find skills -name 'test_*.tl' 2>/dev/null)
+tl_all := $(wildcard skills/*/tools/*.tl)
+tl_tests := $(wildcard skills/*/tools/test_*.tl)
+tl_srcs := $(filter-out $(tl_tests),$(tl_all))
 
 TL_PATH := /zip/.lua/?.tl;/zip/.lua/?/init.tl;/zip/.lua/types/?.d.tl;/zip/.lua/types/?/init.d.tl
 TL_PATH_TEST := ?.tl;?/init.tl;$(TL_PATH)
