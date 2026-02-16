@@ -114,6 +114,7 @@ push_done := $(o)/push/done
 $(push_done): $(do_done)
 	@echo "==> push"
 	@mkdir -p $(@D)
+	@git -C $(repo_dir) remote set-url origin https://x-access-token:$(GH_TOKEN)@github.com/$(REPO).git
 	@git -C $(repo_dir) push --force-with-lease -u origin HEAD
 	@touch $@
 
