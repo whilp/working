@@ -1,5 +1,7 @@
 -- skills/act/tools/set-issue-labels.tl: add/remove labels on an issue
 --
+-- reads WORK_REPO from environment to limit scope.
+-- takes issue number instead of URL.
 -- module tool: returns a Tool record for ah to load via -t
 
 local child = require("cosmic.child")
@@ -16,25 +18,32 @@ local function run(argv: {string}): boolean | string, string, number
   return h:read()
 end
 
+local repo = os.getenv("WORK_REPO") or ""
+
 return {
   name = "set_issue_labels",
-  description = "Add and/or remove labels on a GitHub issue. Pass the issue URL and lists of labels to add/remove.",
+  description = "Add and/or remove labels on a GitHub issue by number.",
   input_schema = {
     type = "object",
     properties = {
-      issue_url = {type = "string", description = "Full GitHub issue URL"},
+      issue_number = {type = "number", description = "Issue or PR number"},
       add = {type = "array", items = {type = "string"}, description = "Labels to add"},
       remove = {type = "array", items = {type = "string"}, description = "Labels to remove"},
     },
-    required = {"issue_url"},
+    required = {"issue_number"},
   },
   execute = function(input: {string: any}): string
-    local url = input.issue_url as string
-    if not url or url == "" then
-      return "error: issue_url required"
+    if repo == "" then
+      return "error: WORK_REPO environment variable not set"
     end
 
-    local argv: {string} = {"gh", "issue", "edit", url}
+    local issue_number = input.issue_number as number
+    if not issue_number then
+      return "error: issue_number required"
+    end
+
+    local ref = repo .. "#" .. tostring(math.floor(issue_number))
+    local argv: {string} = {"gh", "issue", "edit", ref}
 
     local add = input.add as {string}
     if add then

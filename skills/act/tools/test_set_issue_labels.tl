@@ -10,28 +10,21 @@ local function test_tool_record()
   local schema = tool.input_schema as {string: any}
   assert(schema.type == "object", "schema type should be object")
   local props = schema.properties as {string: any}
-  assert(props.issue_url, "should have issue_url property")
+  assert(props.issue_number, "should have issue_number property")
   assert(props.add, "should have add property")
   assert(props.remove, "should have remove property")
   local req = schema.required as {string}
-  assert(req[1] == "issue_url", "issue_url should be required")
+  assert(req[1] == "issue_number", "issue_number should be required")
   assert(tool.execute, "should have execute function")
   print("✓ act/set_issue_labels tool record is valid")
 end
 test_tool_record()
 
-local function test_missing_issue_url()
-  local result = tool.execute({})
-  assert(result == "error: issue_url required", "should error on missing issue_url: " .. result)
-  print("✓ act/set_issue_labels rejects missing issue_url")
+local function test_missing_env()
+  local result = tool.execute({issue_number = 1})
+  assert(result == "error: WORK_REPO environment variable not set", "should error on missing env: " .. result)
+  print("✓ act/set_issue_labels rejects missing WORK_REPO")
 end
-test_missing_issue_url()
-
-local function test_empty_issue_url()
-  local result = tool.execute({issue_url = ""})
-  assert(result == "error: issue_url required", "should error on empty issue_url: " .. result)
-  print("✓ act/set_issue_labels rejects empty issue_url")
-end
-test_empty_issue_url()
+test_missing_env()
 
 print("\nAll act/set_issue_labels tests passed!")

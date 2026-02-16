@@ -13,6 +13,7 @@
 REFLECT_REPO := whilp/working
 
 export PATH := $(CURDIR)/$(o)/bin:$(PATH)
+export WORK_REPO := $(REFLECT_REPO)
 
 # date range: default to yesterday
 DATE ?= $(shell date -u -d 'yesterday' +%Y-%m-%d 2>/dev/null || date -u -v-1d +%Y-%m-%d)

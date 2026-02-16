@@ -1,6 +1,7 @@
 -- skills/reflect/tools/get-workflow-runs.tl: get workflow runs in a date range
 --
 -- fetches action runs and downloads logs and artifacts.
+-- reads WORK_REPO from environment to limit scope.
 -- module tool: returns a Tool record for ah to load via -t
 
 local child = require("cosmic.child")
@@ -18,28 +19,28 @@ local function run(argv: {string}): boolean | string, string, number
   return h:read()
 end
 
+local repo = os.getenv("WORK_REPO") or ""
+
 return {
   name = "get_workflow_runs",
-  description = "Get GitHub Actions workflow runs in a date range, downloading their logs and artifacts. Returns JSON array of runs with metadata.",
+  description = "Get GitHub Actions workflow runs in a date range, downloading their logs and artifacts. Operates on the repo set by WORK_REPO. Returns JSON array of runs with metadata.",
   input_schema = {
     type = "object",
     properties = {
-      repo = {type = "string", description = "GitHub repository (owner/repo)"},
       since = {type = "string", description = "Start date (YYYY-MM-DD)"},
       until_ = {type = "string", description = "End date inclusive (YYYY-MM-DD)"},
       output_dir = {type = "string", description = "Directory to download logs and artifacts into"},
       workflow = {type = "string", description = "Filter by workflow name (optional)"},
     },
-    required = {"repo", "since", "until_", "output_dir"},
+    required = {"since", "until_", "output_dir"},
   },
   execute = function(input: {string: any}): string
-    local repo = input.repo as string
     local since = input.since as string
     local until_ = input.until_ as string
     local output_dir = input.output_dir as string
     local workflow = input.workflow as string
 
-    if not repo or repo == "" then return "error: repo required" end
+    if repo == "" then return "error: WORK_REPO environment variable not set" end
     if not since or since == "" then return "error: since required" end
     if not until_ or until_ == "" then return "error: until_ required" end
     if not output_dir or output_dir == "" then return "error: output_dir required" end
@@ -54,7 +55,7 @@ return {
 
     local owner, name = repo:match("^([^/]+)/([^/]+)$")
     if not owner or not name then
-      return "error: repo must be owner/name format"
+      return "error: WORK_REPO must be owner/name format"
     end
 
     -- create output directory

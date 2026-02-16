@@ -99,7 +99,7 @@ help:
 	@echo "  check-types         Run teal type checker on all .tl files"
 	@echo "  check-format        Check formatting on all .tl files"
 	@echo "  work                Run full work loop (pick -> plan -> do -> check -> act)"
-	@echo "  pick                Pick an issue (REPO=owner/repo)"
+	@echo "  pick                Pick a work item: PR with feedback or issue (REPO=owner/repo)"
 	@echo "  clone               Clone repo and checkout work branch"
 	@echo "  plan                Research codebase and write a plan"
 	@echo "  do                  Execute the plan"

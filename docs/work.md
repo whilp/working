@@ -1,28 +1,30 @@
 # work loop
 
-the system implements a PDCA (plan-do-check-act) loop for github issues. `make work` drives the full cycle:
+the system implements a PDCA (plan-do-check-act) loop for github issues and PR feedback. `make work` drives the full cycle:
 
 ```
 pick → clone → plan → do → push → check → act
 ```
 
+pick prefers PRs with review feedback over new issues. when a PR has `CHANGES_REQUESTED` status, the pipeline addresses that feedback. otherwise, it picks a new issue.
+
 each phase is a make target with file-based dependencies. outputs go to `o/`.
 
 ## phases
 
-**pick** — selects one open `todo`-labeled issue from the target repo. ensures labels exist, checks PR limits, picks by priority/age/clarity. transitions the issue to `doing`. writes `o/pick/issue.json`.
+**pick** — selects the next work item. first checks for open PRs with `CHANGES_REQUESTED` review status. if found, picks the oldest one. otherwise, selects one open `todo`-labeled issue. ensures labels exist, checks PR limits, picks by priority/age/clarity. transitions issues to `doing`. writes `o/pick/issue.json` with a `type` field (`"pr"` or `"issue"`).
 
-**clone** — clones (or fetches) the target repo into `o/repo/`. checks out a fresh feature branch from the default branch.
+**clone** — clones (or fetches) the target repo into `o/repo/`. for PRs, checks out the existing branch. for issues, creates a fresh feature branch from the default branch.
 
-**plan** — reads the repo and issue, writes a step-by-step plan to `o/plan/plan.md`. research only, no source changes.
+**plan** — reads the repo and work item, writes a step-by-step plan to `o/plan/plan.md`. for PRs, the plan addresses each piece of review feedback. for issues, the plan covers the implementation. research only, no source changes.
 
 **do** — executes the plan in `o/repo/`. makes changes, runs validation, commits. writes `o/do/do.md`.
 
 **push** — pushes the feature branch to origin.
 
-**check** — reviews the diff against the plan. writes verdict (`pass`, `needs-fixes`, `fail`) and actions to `o/check/actions.json`.
+**check** — reviews the diff against the plan. for PRs, verifies each piece of feedback was addressed. writes verdict (`pass`, `needs-fixes`, `fail`) and actions to `o/check/actions.json`.
 
-**act** — executes actions: comments on the issue, creates a PR (on pass), transitions labels to `done` or `failed`. writes `o/act.json`.
+**act** — executes actions: comments on the issue/PR, creates a PR (on pass, for issues only), transitions labels to `done` or `failed` (for issues only). writes `o/act.json`.
 
 ## convergence
 
@@ -40,6 +42,7 @@ each phase runs `ah` (the agent harness) with:
 ## tools
 
 **pick tools** (`skills/pick/tools/`):
+- `get-prs-with-feedback.tl` — list open PRs with `CHANGES_REQUESTED` review status and their review comments via `gh pr list` and `gh pr view`
 - `list-issues.tl` — fetch open `todo` issues via `gh issue list`
 - `count-open-prs.tl` — count open PRs via `gh pr list`
 - `ensure-labels.tl` — create `todo`/`doing`/`done`/`failed` labels via `gh label create`

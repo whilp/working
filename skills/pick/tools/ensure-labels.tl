@@ -1,5 +1,6 @@
 -- skills/pick/tools/ensure-labels.tl: ensure required labels exist on a repo
 --
+-- reads WORK_REPO from environment to limit scope.
 -- module tool: returns a Tool record for ah to load via -t
 
 local child = require("cosmic.child")
@@ -16,20 +17,18 @@ local function run(argv: {string}): boolean | string, string, number
   return h:read()
 end
 
+local repo = os.getenv("WORK_REPO") or ""
+
 return {
   name = "ensure_labels",
-  description = "Ensure required work labels (todo, doing, done, failed) exist on a GitHub repository.",
+  description = "Ensure required work labels (todo, doing, done, failed) exist on the target repository (set by WORK_REPO).",
   input_schema = {
     type = "object",
-    properties = {
-      repo = {type = "string", description = "GitHub repository (owner/repo)"},
-    },
-    required = {"repo"},
+    properties = {},
   },
-  execute = function(input: {string: any}): string
-    local repo = input.repo as string
-    if not repo or repo == "" then
-      return "error: repo argument required"
+  execute = function(_: {string: any}): string
+    if repo == "" then
+      return "error: WORK_REPO environment variable not set"
     end
 
     local labels = {"todo", "doing", "done", "failed"}

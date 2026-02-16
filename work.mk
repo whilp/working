@@ -3,6 +3,10 @@
 # implements the PDCA work loop as make targets:
 #   pick -> clone -> plan -> do -> push -> check -> act
 #
+# pick prefers PRs with review feedback over new issues. when a PR with
+# CHANGES_REQUESTED is found, pick selects it and the rest of the pipeline
+# addresses the feedback. otherwise, pick selects a new issue.
+#
 # convergence: check writes o/do/feedback.md when verdict is needs-fixes.
 # since do depends on feedback.md, the next make run re-executes do -> push -> check.
 # the caller runs `make work` which loops until convergence or a retry limit.
@@ -10,6 +14,7 @@
 REPO ?=
 
 export PATH := $(CURDIR)/$(o)/bin:$(PATH)
+export WORK_REPO := $(REPO)
 
 # target repo clone
 repo_dir := $(o)/repo
@@ -36,7 +41,7 @@ act_done := $(o)/act.json
 LOOP ?= 1
 
 # --- pick ---
-# preflight (labels, pr-limit), fetch issues, pick one, mark doing
+# preflight (labels, pr-limit), check for PRs with feedback, fetch issues, pick one, mark doing
 
 $(issue): $(ah) $(cosmic)
 	@mkdir -p $(pick_dir)
@@ -48,17 +53,20 @@ $(issue): $(ah) $(cosmic)
 		--max-tokens 50000 \
 		--db $(pick_dir)/session.db \
 		--tool "ensure_labels=skills/pick/tools/ensure-labels.tl" \
+		--tool "get_prs_with_feedback=skills/pick/tools/get-prs-with-feedback.tl" \
 		--tool "count_open_prs=skills/pick/tools/count-open-prs.tl" \
 		--tool "list_issues=skills/pick/tools/list-issues.tl" \
 		--tool "set_issue_labels=skills/pick/tools/set-issue-labels.tl" \
 		--tool "bash=" \
-		<<< "REPO=$(REPO)"
+		<<< ""
 
 .PHONY: pick
 pick: $(issue)
 
 # --- clone ---
 
+# work item type and branch from issue.json
+item_type = $(shell jq -r '.type // "issue"' $(issue) 2>/dev/null)
 branch = $(shell jq -r '.branch // empty' $(issue) 2>/dev/null)
 repo_ready := $(repo_dir)/sha
 
@@ -70,8 +78,14 @@ $(repo_ready): $(issue)
 	fi
 	@echo "==> fetch"
 	@git -C $(repo_dir) fetch origin
-	@echo "==> checkout $(branch)"
-	@git -C $(repo_dir) checkout -B $(branch) $(default_branch)
+	@if [ "$(item_type)" = "pr" ]; then \
+		echo "==> checkout existing PR branch $(branch)"; \
+		git -C $(repo_dir) checkout $(branch); \
+		git -C $(repo_dir) pull origin $(branch); \
+	else \
+		echo "==> checkout new branch $(branch)"; \
+		git -C $(repo_dir) checkout -B $(branch) $(default_branch); \
+	fi
 	@git -C $(repo_dir) rev-parse HEAD > $@
 
 .PHONY: clone
@@ -109,7 +123,7 @@ do: $(do_done)
 $(do_done): $(repo_ready) $(plan) $(feedback) $(issue) $(ah)
 	@echo "==> do"
 	@mkdir -p $(do_dir)
-	@if ! git -C $(repo_dir) diff --quiet $(default_branch)..HEAD 2>/dev/null; then \
+	@if [ "$(item_type)" != "pr" ] && ! git -C $(repo_dir) diff --quiet $(default_branch)..HEAD 2>/dev/null; then \
 		echo "  (retrying: resetting branch to $(default_branch))"; \
 		git -C $(repo_dir) reset --hard $(default_branch); \
 	fi
@@ -177,14 +191,10 @@ $(act_done): $(check_done) $(issue) $(ah) $(cosmic)
 		--tool "create_pr=skills/act/tools/create-pr.tl" \
 		--tool "set_issue_labels=skills/act/tools/set-issue-labels.tl" \
 		--tool "bash=" \
-		<<< "REPO=$(REPO) ISSUE_FILE=$(issue) ACTIONS_FILE=$(actions)"
+		<<< "ISSUE_FILE=$(issue) ACTIONS_FILE=$(actions)"
 
 # --- work: convergence loop ---
 
-# work: converge on act_done, retrying up to 3 times.
-# each attempt rebuilds the full chain (do -> push -> check -> act).
-# earlier attempts tolerate failure; only the last must succeed.
-# when check writes feedback.md, do_done becomes stale and re-runs.
 .PHONY: work
 converge := $(MAKE) "REPO=$(REPO)" $(act_done)
 work:
