@@ -8,24 +8,16 @@
 # the caller runs `make work` which loops until convergence or a retry limit.
 
 REPO ?=
-MAX_PRS ?= 4
-work_tl := lib/work/work.tl
 
 export PATH := $(CURDIR)/$(o)/bin:$(PATH)
 
 # target repo clone
 repo_dir := $(o)/repo
-default_branch = $(shell git -C $(repo_dir) symbolic-ref refs/remotes/origin/HEAD 2>/dev/null | sed 's|refs/remotes/||')
-
-# shared env vars for all work.tl subcommands
-export WORK_REPO := $(REPO)
-export WORK_MAX_PRS := $(MAX_PRS)
-export WORK_INPUT := $(o)/pick/issues.json
-export WORK_ISSUE := $(o)/pick/issue.json
-export WORK_ACTIONS := $(o)/check/actions.json
+default_branch = $(or $(shell git -C $(repo_dir) symbolic-ref refs/remotes/origin/HEAD 2>/dev/null | sed 's|refs/remotes/||'),origin/main)
 
 # named targets
-issue := $(o)/pick/issue.json
+pick_dir := $(o)/pick
+issue := $(pick_dir)/issue.json
 plan_dir := $(o)/plan
 plan := $(plan_dir)/plan.md
 do_dir := $(o)/do
@@ -44,27 +36,34 @@ act_done := $(o)/act.json
 LOOP ?= 1
 
 # --- pick ---
-# preflight (labels, pr-limit) then fetch issues, pick one, mark doing
+# preflight (labels, pr-limit), fetch issues, pick one, mark doing
 
-$(issue): $(work_tl) $(cosmic)
-	@mkdir -p $(@D)
+$(issue): $(ah) $(cosmic)
+	@mkdir -p $(pick_dir)
 	@echo "==> pick"
-	@$(work_tl) labels > /dev/null
-	@$(work_tl) pr-limit > /dev/null
-	@$(work_tl) issues > $(o)/pick/issues.json
-	@$(work_tl) issue > $@
-	@$(work_tl) doing > /dev/null
+	@timeout 60 $(ah) -n \
+		-m sonnet \
+		--skill pick \
+		--must-produce $(issue) \
+		--max-tokens 50000 \
+		--db $(pick_dir)/session.db \
+		--tool "ensure_labels=skills/pick/tools/ensure-labels.tl" \
+		--tool "count_open_prs=skills/pick/tools/count-open-prs.tl" \
+		--tool "list_issues=skills/pick/tools/list-issues.tl" \
+		--tool "set_issue_labels=skills/pick/tools/set-issue-labels.tl" \
+		--tool "bash=" \
+		<<< "REPO=$(REPO)"
 
 .PHONY: pick
 pick: $(issue)
 
 # --- clone ---
 
-branch = $(shell jq -r .branch $(issue) 2>/dev/null)
-repo_sha := $(repo_dir)/sha
-repo_branch := $(repo_dir)/branch
+branch = $(shell jq -r '.branch // empty' $(issue) 2>/dev/null)
+repo_ready := $(repo_dir)/sha
 
-$(repo_sha): $(issue)
+$(repo_ready): $(issue)
+	@test -n "$(branch)" || { echo "error: no branch in $(issue)"; exit 1; }
 	@if [ ! -d $(repo_dir)/.git ]; then \
 		echo "==> clone $(REPO)"; \
 		gh repo clone $(REPO) $(repo_dir); \
@@ -73,27 +72,27 @@ $(repo_sha): $(issue)
 	@git -C $(repo_dir) fetch origin
 	@echo "==> checkout $(branch)"
 	@git -C $(repo_dir) checkout -B $(branch) $(default_branch)
-	@git -C $(repo_dir) rev-parse HEAD > $(repo_sha)
-	@echo $(branch) > $(repo_branch)
+	@git -C $(repo_dir) rev-parse HEAD > $@
 
 .PHONY: clone
-clone: $(repo_sha)
+clone: $(repo_ready)
 
 # --- plan ---
 
 .PHONY: plan
 plan: $(plan)
 
-$(plan): $(repo_sha) $(issue) $(ah)
+$(plan): $(repo_ready) $(issue) $(ah)
 	@echo "==> plan"
 	@mkdir -p $(plan_dir)
 	@timeout 180 $(ah) -n \
+		-m sonnet \
 		--sandbox \
 		--skill plan \
 		--must-produce $(plan) \
 		--max-tokens 100000 \
 		--db $(plan_dir)/session-$(LOOP).db \
-		--unveil $(repo_dir):rwcx \
+		--unveil $(repo_dir):rx \
 		--unveil $(plan_dir):rwc \
 		--unveil .:r \
 		< $(issue)
@@ -107,7 +106,7 @@ $(feedback): $(plan)
 .PHONY: do
 do: $(do_done)
 
-$(do_done): $(repo_sha) $(plan) $(feedback) $(issue) $(ah)
+$(do_done): $(repo_ready) $(plan) $(feedback) $(issue) $(ah)
 	@echo "==> do"
 	@mkdir -p $(do_dir)
 	@if ! git -C $(repo_dir) diff --quiet $(default_branch)..HEAD 2>/dev/null; then \
@@ -115,6 +114,7 @@ $(do_done): $(repo_sha) $(plan) $(feedback) $(issue) $(ah)
 		git -C $(repo_dir) reset --hard $(default_branch); \
 	fi
 	@timeout 300 $(ah) -n \
+		-m sonnet \
 		--sandbox \
 		--skill do \
 		--must-produce $(do_dir)/do.md \
@@ -132,6 +132,7 @@ $(do_done): $(repo_sha) $(plan) $(feedback) $(issue) $(ah)
 $(push_done): $(do_done)
 	@echo "==> push"
 	@mkdir -p $(@D)
+	@test -n "$(GH_TOKEN)" || { echo "error: GH_TOKEN not set"; exit 1; }
 	@git -C $(repo_dir) remote set-url origin https://x-access-token:$(GH_TOKEN)@github.com/$(REPO).git
 	@git -C $(repo_dir) push --force-with-lease -u origin HEAD
 	@touch $@
@@ -145,6 +146,7 @@ $(check_done): $(push_done) $(plan) $(issue) $(ah)
 	@echo "==> check"
 	@mkdir -p $(check_dir)
 	@timeout 180 $(ah) -n \
+		-m sonnet \
 		--sandbox \
 		--skill check \
 		--must-produce $(actions) \
@@ -160,10 +162,23 @@ $(check_done): $(push_done) $(plan) $(issue) $(ah)
 
 # --- act ---
 
-$(act_done): $(check_done) $(issue) $(work_tl) $(cosmic)
-	@mkdir -p $(@D)
+act_dir := $(o)/act
+
+$(act_done): $(check_done) $(issue) $(ah) $(cosmic)
+	@mkdir -p $(act_dir)
 	@echo "==> act"
-	@$(work_tl) act > $@
+	@timeout 60 $(ah) -n \
+		-m sonnet \
+		--skill act \
+		--must-produce $(act_done) \
+		--max-tokens 50000 \
+		--db $(act_dir)/session-$(LOOP).db \
+		--tool "read_file=skills/act/tools/read-file.tl" \
+		--tool "comment_issue=skills/act/tools/comment-issue.tl" \
+		--tool "create_pr=skills/act/tools/create-pr.tl" \
+		--tool "set_issue_labels=skills/act/tools/set-issue-labels.tl" \
+		--tool "bash=" \
+		<<< "REPO=$(REPO) ISSUE_FILE=$(issue) ACTIONS_FILE=$(actions)"
 
 # --- work: convergence loop ---
 
@@ -172,7 +187,7 @@ $(act_done): $(check_done) $(issue) $(work_tl) $(cosmic)
 # earlier attempts tolerate failure; only the last must succeed.
 # when check writes feedback.md, do_done becomes stale and re-runs.
 .PHONY: work
-converge := $(MAKE) REPO=$(REPO) $(act_done)
+converge := $(MAKE) "REPO=$(REPO)" $(act_done)
 work:
 	-@LOOP=1 $(converge)
 	-@LOOP=2 $(converge)

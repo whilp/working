@@ -1,4 +1,4 @@
--- skills/pick/tools/list-issues.tl: fetch open todo issues from a github repo
+-- skills/pick/tools/count-open-prs.tl: count open PRs on a repo
 --
 -- module tool: returns a Tool record for ah to load via -t
 
@@ -6,8 +6,8 @@ local child = require("cosmic.child")
 local json = require("cosmic.json")
 
 return {
-   name = "list_issues",
-   description = "Fetch open issues labeled 'todo' from a GitHub repository. Pass owner/repo as the repo argument.",
+   name = "count_open_prs",
+   description = "Count the number of open pull requests on a GitHub repository. Returns a number.",
    input_schema = {
       type = "object",
       properties = {
@@ -21,25 +21,18 @@ return {
          return "error: repo argument required"
       end
 
-      local h = child.spawn({
-         "gh", "issue", "list",
-         "--repo", repo,
-         "--label", "todo",
-         "--state", "open",
-         "--json", "number,title,body,url,labels,createdAt",
-         "--limit", "100",
-      })
+      local h = child.spawn({"gh", "pr", "list", "--repo", repo, "--state", "open", "--json", "number"})
       local ok, out, code = h:read()
 
       if not ok then
          return "error: gh failed (exit " .. tostring(code) .. "): " .. (out or "")
       end
 
-      local issues = json.decode(out or "[]")
-      if not issues then
-         return "error: failed to parse issues json"
+      local prs = json.decode(out or "[]") as {any}
+      if not prs then
+         return "error: failed to parse PR list"
       end
 
-      return json.encode(issues)
+      return tostring(#prs)
    end,
 }
