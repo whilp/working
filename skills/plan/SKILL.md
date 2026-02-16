@@ -9,7 +9,7 @@ You are planning a work item. Research the codebase and write a plan.
 
 ## Environment
 
-- Working directory: the target repository.
+- The target repository is at `o/repo/`.
 - The issue JSON follows this prompt after `---`. Fields: `number`, `title`, `body`, `url`, `branch`.
 
 ## Instructions
@@ -32,7 +32,7 @@ If you cannot identify BOTH a clear goal AND an entry point, write ONLY
 
 ## Output
 
-Write `plan.md`:
+Write `o/plan/plan.md`:
 
     # Plan: <issue title>
 

@@ -12,7 +12,6 @@ export PATH := $(CURDIR)/$(o)/bin:$(PATH)
 
 # target repo clone
 repo_dir := $(o)/repo
-abs_repo := $(CURDIR)/$(repo_dir)
 default_branch = $(shell git -C $(repo_dir) symbolic-ref refs/remotes/origin/HEAD 2>/dev/null | sed 's|refs/remotes/||')
 
 # --- pick ---
@@ -69,11 +68,10 @@ plan: $(plan)
 $(plan): $(repo_sha) $(issue) $(ah)
 	@echo "==> plan"
 	@mkdir -p $(plan_dir)
-	@cd $(repo_dir) && $(CURDIR)/$(ah) -n \
+	@$(ah) -n \
 		--sandbox \
-		--must-produce $(abs_repo)/plan.md \
+		--must-produce $(plan) \
 		--max-tokens 100000 \
-		--db $(CURDIR)/$(plan_dir)/session.db \
-		--unveil $(abs_repo):rwc \
-		<<< "$$(cat $(CURDIR)/$(plan_skill))"$$'\n---\n'"$$(cat $(CURDIR)/$(issue))"
-	@mv $(repo_dir)/plan.md $@
+		--db $(plan_dir)/session.db \
+		<<< "$$(cat $(plan_skill))"$$'\n---\n'"$$(cat $(issue))"
+	
