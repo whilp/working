@@ -11,7 +11,9 @@ You are executing a work item. Follow the plan.
 
 - The target repository is at `o/repo/`. Make all changes there.
 - The feature branch is already checked out.
-- The issue JSON follows this prompt after `---`.
+- The work item JSON follows this prompt after `---`.
+- If `type` is `"pr"`, you are addressing review feedback on an existing PR.
+- If `type` is `"issue"`, you are implementing new work.
 
 ## Setup
 
@@ -42,7 +44,7 @@ Do not use destructive git commands: `git reset --hard`, `git checkout .`,
 
 Write `o/do/do.md`:
 
-    # Do: <issue title>
+    # Do: <title>
 
     ## Changes
     <list of files changed>

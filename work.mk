@@ -1,11 +1,11 @@
 # work.mk: work targets
 #
 # implements the PDCA work loop as make targets:
-#   iterate (try first) -> pick -> clone -> plan -> do -> push -> check -> act
+#   pick -> clone -> plan -> do -> push -> check -> act
 #
-# iterate runs before pick to prioritize addressing PR review feedback over
-# starting new work. if iterate finds and addresses a PR, work is done.
-# if no PRs need iteration, the normal pick flow runs.
+# pick prefers PRs with review feedback over new issues. when a PR with
+# CHANGES_REQUESTED is found, pick selects it and the rest of the pipeline
+# addresses the feedback. otherwise, pick selects a new issue.
 #
 # convergence: check writes o/do/feedback.md when verdict is needs-fixes.
 # since do depends on feedback.md, the next make run re-executes do -> push -> check.
@@ -20,8 +20,6 @@ repo_dir := $(o)/repo
 default_branch = $(or $(shell git -C $(repo_dir) symbolic-ref refs/remotes/origin/HEAD 2>/dev/null | sed 's|refs/remotes/||'),origin/main)
 
 # named targets
-iterate_dir := $(o)/iterate
-iterate_done := $(iterate_dir)/iterate.json
 pick_dir := $(o)/pick
 issue := $(pick_dir)/issue.json
 plan_dir := $(o)/plan
@@ -41,32 +39,8 @@ act_done := $(o)/act.json
 # attempt its own session database. defaults to 1 for manual runs.
 LOOP ?= 1
 
-# --- iterate ---
-# check for PRs with review feedback; address them before picking new work
-
-$(iterate_done): $(ah) $(cosmic)
-	@mkdir -p $(iterate_dir)
-	@echo "==> iterate"
-	@if [ ! -d $(repo_dir)/.git ]; then \
-		echo "==> clone $(REPO) (for iterate)"; \
-		gh repo clone $(REPO) $(repo_dir); \
-	fi
-	@timeout 300 $(ah) -n \
-		-m opus \
-		--skill iterate \
-		--must-produce $(iterate_done) \
-		--max-tokens 200000 \
-		--db $(iterate_dir)/session.db \
-		--tool "list_reviewed_prs=skills/iterate/tools/list-reviewed-prs.tl" \
-		--tool "get_pr_feedback=skills/iterate/tools/get-pr-feedback.tl" \
-		--tool "bash=" \
-		<<< "REPO=$(REPO)"
-
-.PHONY: iterate
-iterate: $(iterate_done)
-
 # --- pick ---
-# preflight (labels, pr-limit), fetch issues, pick one, mark doing
+# preflight (labels, pr-limit), check for PRs with feedback, fetch issues, pick one, mark doing
 
 $(issue): $(ah) $(cosmic)
 	@mkdir -p $(pick_dir)
@@ -78,6 +52,7 @@ $(issue): $(ah) $(cosmic)
 		--max-tokens 50000 \
 		--db $(pick_dir)/session.db \
 		--tool "ensure_labels=skills/pick/tools/ensure-labels.tl" \
+		--tool "get_prs_with_feedback=skills/pick/tools/get-prs-with-feedback.tl" \
 		--tool "count_open_prs=skills/pick/tools/count-open-prs.tl" \
 		--tool "list_issues=skills/pick/tools/list-issues.tl" \
 		--tool "set_issue_labels=skills/pick/tools/set-issue-labels.tl" \
@@ -89,6 +64,8 @@ pick: $(issue)
 
 # --- clone ---
 
+# work item type and branch from issue.json
+item_type = $(shell jq -r '.type // "issue"' $(issue) 2>/dev/null)
 branch = $(shell jq -r '.branch // empty' $(issue) 2>/dev/null)
 repo_ready := $(repo_dir)/sha
 
@@ -100,8 +77,14 @@ $(repo_ready): $(issue)
 	fi
 	@echo "==> fetch"
 	@git -C $(repo_dir) fetch origin
-	@echo "==> checkout $(branch)"
-	@git -C $(repo_dir) checkout -B $(branch) $(default_branch)
+	@if [ "$(item_type)" = "pr" ]; then \
+		echo "==> checkout existing PR branch $(branch)"; \
+		git -C $(repo_dir) checkout $(branch); \
+		git -C $(repo_dir) pull origin $(branch); \
+	else \
+		echo "==> checkout new branch $(branch)"; \
+		git -C $(repo_dir) checkout -B $(branch) $(default_branch); \
+	fi
 	@git -C $(repo_dir) rev-parse HEAD > $@
 
 .PHONY: clone
@@ -139,7 +122,7 @@ do: $(do_done)
 $(do_done): $(repo_ready) $(plan) $(feedback) $(issue) $(ah)
 	@echo "==> do"
 	@mkdir -p $(do_dir)
-	@if ! git -C $(repo_dir) diff --quiet $(default_branch)..HEAD 2>/dev/null; then \
+	@if [ "$(item_type)" != "pr" ] && ! git -C $(repo_dir) diff --quiet $(default_branch)..HEAD 2>/dev/null; then \
 		echo "  (retrying: resetting branch to $(default_branch))"; \
 		git -C $(repo_dir) reset --hard $(default_branch); \
 	fi
@@ -209,22 +192,11 @@ $(act_done): $(check_done) $(issue) $(ah) $(cosmic)
 		--tool "bash=" \
 		<<< "REPO=$(REPO) ISSUE_FILE=$(issue) ACTIONS_FILE=$(actions)"
 
-# --- work: iterate first, then convergence loop ---
+# --- work: convergence loop ---
 
-# work: first try iterate (address PR review feedback). if iterate finds
-# a PR and addresses it (status=done), work is complete. if iterate finds
-# nothing (status=skip), fall through to the normal pick→plan→do→check→act flow.
-# the normal flow converges on act_done, retrying up to 3 times.
 .PHONY: work
 converge := $(MAKE) "REPO=$(REPO)" $(act_done)
 work:
-	@$(MAKE) "REPO=$(REPO)" $(iterate_done)
-	@status=$$(jq -r '.status // "skip"' $(iterate_done) 2>/dev/null); \
-	if [ "$$status" = "done" ]; then \
-		echo "==> iterate addressed a PR, done"; \
-		exit 0; \
-	fi
-	@echo "==> no PRs to iterate, starting normal flow"
 	-@LOOP=1 $(converge)
 	-@LOOP=2 $(converge)
 	@LOOP=3 $(converge)

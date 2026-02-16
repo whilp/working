@@ -1,6 +1,7 @@
--- skills/iterate/tools/list-reviewed-prs.tl: list open PRs with review feedback
+-- skills/pick/tools/get-prs-with-feedback.tl: list open PRs with review feedback
 --
--- returns PRs where reviewDecision is CHANGES_REQUESTED.
+-- returns PRs where reviewDecision is CHANGES_REQUESTED, including their
+-- review comments and details. combines listing and feedback into one call.
 -- module tool: returns a Tool record for ah to load via -t
 
 local child = require("cosmic.child")
@@ -19,8 +20,8 @@ local function run(argv: {string}): boolean | string, string, number
 end
 
 return {
-  name = "list_reviewed_prs",
-  description = "List open pull requests that have CHANGES_REQUESTED review status. Returns a JSON array of PRs needing iteration.",
+  name = "get_prs_with_feedback",
+  description = "List open pull requests that have CHANGES_REQUESTED review status, including their review comments. Returns a JSON array of PRs with feedback details.",
   input_schema = {
     type = "object",
     properties = {
@@ -38,7 +39,7 @@ return {
       "gh", "pr", "list",
       "--repo", repo,
       "--state", "open",
-      "--json", "number,title,url,headRefName,reviewDecision,updatedAt",
+      "--json", "number,title,url,headRefName,reviewDecision,updatedAt,body",
     })
     if not ok then
       return "error: gh failed (exit " .. tostring(code) .. "): " .. (out or "")
@@ -52,7 +53,26 @@ return {
     local filtered: {any} = {}
     for _, pr in ipairs(prs) do
       if pr.reviewDecision == "CHANGES_REQUESTED" then
-        filtered[#filtered + 1] = pr
+        -- fetch review comments for this PR
+        local num = pr.number as number
+        local rok, rout, rcode = run({
+          "gh", "pr", "view",
+          tostring(math.floor(num)),
+          "--repo", repo,
+          "--json", "number,title,body,headRefName,reviews,comments,reviewDecision,url,updatedAt",
+        })
+        if rok then
+          local detail = json.decode(rout or "{}") as {string: any}
+          if detail then
+            filtered[#filtered + 1] = detail
+          else
+            filtered[#filtered + 1] = pr
+          end
+        else
+          -- fall back to list data if view fails
+          pr._feedback_error = "gh pr view failed (exit " .. tostring(rcode) .. ")"
+          filtered[#filtered + 1] = pr
+        end
       end
     end
 

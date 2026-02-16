@@ -1,10 +1,10 @@
 #!/usr/bin/env cosmic
--- test_list_reviewed_prs.tl: tests for list-reviewed-prs tool
+-- test_get_prs_with_feedback.tl: tests for get-prs-with-feedback tool
 
-local tool = require("skills.iterate.tools.list-reviewed-prs")
+local tool = require("skills.pick.tools.get-prs-with-feedback")
 
 local function test_tool_record()
-  assert(tool.name == "list_reviewed_prs", "name should be list_reviewed_prs: " .. tostring(tool.name))
+  assert(tool.name == "get_prs_with_feedback", "name should be get_prs_with_feedback: " .. tostring(tool.name))
   assert(tool.description and #tool.description > 0, "should have description")
   assert(tool.input_schema, "should have input_schema")
   local schema = tool.input_schema as {string: any}
@@ -14,22 +14,22 @@ local function test_tool_record()
   local req = schema.required as {string}
   assert(req[1] == "repo", "repo should be required")
   assert(tool.execute, "should have execute function")
-  print("✓ list_reviewed_prs tool record is valid")
+  print("✓ get_prs_with_feedback tool record is valid")
 end
 test_tool_record()
 
 local function test_missing_repo()
   local result = tool.execute({})
   assert(result == "error: repo argument required", "should error on missing repo: " .. result)
-  print("✓ list_reviewed_prs rejects missing repo")
+  print("✓ get_prs_with_feedback rejects missing repo")
 end
 test_missing_repo()
 
 local function test_empty_repo()
   local result = tool.execute({repo = ""})
   assert(result == "error: repo argument required", "should error on empty repo: " .. result)
-  print("✓ list_reviewed_prs rejects empty repo")
+  print("✓ get_prs_with_feedback rejects empty repo")
 end
 test_empty_repo()
 
-print("\nAll list_reviewed_prs tests passed!")
+print("\nAll get_prs_with_feedback tests passed!")

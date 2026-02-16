@@ -10,7 +10,9 @@ You are checking a work item. Review the execution against the plan.
 ## Environment
 
 - The target repository is at `o/repo/`.
-- The issue JSON follows this prompt after `---`.
+- The work item JSON follows this prompt after `---`.
+- If `type` is `"pr"`, you are checking that review feedback was addressed.
+- If `type` is `"issue"`, you are checking new work against the plan.
 
 ## Setup
 
@@ -24,7 +26,8 @@ Read `o/plan/plan.md` for the plan. Read `o/do/do.md` for the execution summary.
    ```
 2. Run validation steps from the plan.
 3. Check for unintended changes.
-4. Write your assessment.
+4. For PRs: verify each piece of review feedback was addressed.
+5. Write your assessment.
 
 ## Output
 
@@ -66,8 +69,10 @@ Write `o/check/actions.json`:
 
 Action rules:
 - Always include `comment_issue` with verdict and summary.
-- Include `create_pr` only when verdict is "pass" and changes were committed.
-  Use the branch from the issue JSON.
+- For issues: include `create_pr` only when verdict is "pass" and changes were committed.
+  Use the branch from the work item JSON.
+- For PRs: do NOT include `create_pr` (the PR already exists). The push phase
+  already updated the branch.
 
 If verdict is "needs-fixes", write the critical and warning issues to
 `o/do/feedback.md` so the do phase can address them on re-run.
