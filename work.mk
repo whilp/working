@@ -24,4 +24,5 @@ $(issue): $(ah) $(cosmic)
 		--must-produce $(issue) \
 		--max-tokens 50000 \
 		--db $(pick)/session.db \
-		-t "list_issues=skills/pick/tools/list-issues.tl"
+		-t "list_issues=skills/pick/tools/list-issues.tl" \
+		-t "bash="
