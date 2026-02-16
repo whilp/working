@@ -3,6 +3,18 @@
 -- module tool: returns a Tool record for ah to load via -t
 
 local child = require("cosmic.child")
+local unix = require("cosmo.unix")
+
+local function run(argv: {string}): boolean, string, number
+   local h, err = child.spawn(argv, {
+      env = unix.environ() as {string},
+      stderr = 1,
+   })
+   if not h then
+      return false, err or "spawn failed", -1
+   end
+   return h:read()
+end
 
 return {
    name = "set_issue_labels",
@@ -40,9 +52,7 @@ return {
          end
       end
 
-      local h = child.spawn(argv)
-      local ok, out, code = h:read()
-
+      local ok, out, code = run(argv)
       if not ok then
          return "error: gh failed (exit " .. tostring(code) .. "): " .. (out or "")
       end

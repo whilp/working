@@ -3,7 +3,19 @@
 -- module tool: returns a Tool record for ah to load via -t
 
 local child = require("cosmic.child")
+local unix = require("cosmo.unix")
 local json = require("cosmic.json")
+
+local function run(argv: {string}): boolean, string, number
+   local h, err = child.spawn(argv, {
+      env = unix.environ() as {string},
+      stderr = 1,
+   })
+   if not h then
+      return false, err or "spawn failed", -1
+   end
+   return h:read()
+end
 
 return {
    name = "count_open_prs",
@@ -21,9 +33,7 @@ return {
          return "error: repo argument required"
       end
 
-      local h = child.spawn({"gh", "pr", "list", "--repo", repo, "--state", "open", "--json", "number"})
-      local ok, out, code = h:read()
-
+      local ok, out, code = run({"gh", "pr", "list", "--repo", repo, "--state", "open", "--json", "number"})
       if not ok then
          return "error: gh failed (exit " .. tostring(code) .. "): " .. (out or "")
       end
