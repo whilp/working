@@ -45,9 +45,11 @@ $(ah):
 	@chmod +x $@
 
 # sources
-tl_srcs := $(shell find skills -name '*.tl' 2>/dev/null)
+tl_srcs := $(shell find skills -name '*.tl' ! -name 'test_*' 2>/dev/null)
+tl_tests := $(shell find skills -name 'test_*.tl' 2>/dev/null)
 
 TL_PATH := /zip/.lua/?.tl;/zip/.lua/?/init.tl;/zip/.lua/types/?.d.tl;/zip/.lua/types/?/init.d.tl
+TL_PATH_TEST := ?.tl;?/init.tl;$(TL_PATH)
 
 # type checking
 all_type_checks := $(patsubst %,$(o)/%.teal.ok,$(tl_srcs))
@@ -106,16 +108,47 @@ check-format: $(all_fmt_checks)
 	echo ""; echo "format: $$total checked, $$fail failed"; \
 	[ $$fail -eq 0 ]
 
-# ci: type checks + format checks
+# ci: type checks + format checks + tests
 .PHONY: ci
-ci: check-types check-format
+ci: check-types check-format test
+
+# tests
+all_test_checks := $(patsubst %,$(o)/%.test.ok,$(tl_tests))
+
+$(o)/%.tl.test.ok: %.tl $(cosmic)
+	@mkdir -p $(@D)
+	@d=$$(mktemp -d); \
+	if TL_PATH='$(TL_PATH_TEST)' TEST_TMPDIR=$$d $(cosmic) "$<" >$$d/out 2>&1; then \
+		echo "pass" > $@; \
+	else \
+		echo "FAIL" > $@; \
+		cat $$d/out >> $@ 2>/dev/null || true; \
+	fi; \
+	rm -rf $$d
+
+.PHONY: test
+test: $(all_test_checks)
+	@fail=0; total=0; \
+	for f in $(all_test_checks); do \
+		total=$$((total + 1)); \
+		src=$$(echo "$$f" | sed 's|^$(o)/||; s|\.test\.ok$$||'); \
+		if grep -q "^pass" "$$f"; then \
+			echo "  ✓ $$src"; \
+		else \
+			echo "  ✗ $$src"; sed -n '2,$$p' "$$f" | sed 's/^/    /'; \
+			fail=$$((fail + 1)); \
+		fi; \
+	done; \
+	echo ""; echo "tests: $$total run, $$fail failed"; \
+	[ $$fail -eq 0 ]
 
 .PHONY: help
 help:
 	@echo "Usage: make [target]"
 	@echo ""
 	@echo "Targets:"
-	@echo "  ci                  Run type checks and format checks"
+	@echo "  ci                  Run type checks, format checks, and tests"
+	@echo "  test                Run tests"
 	@echo "  check-types         Run teal type checker on all .tl files"
 	@echo "  check-format        Check formatting on all .tl files"
 	@echo "  work                Run full work loop (pick -> plan -> do -> check -> act)"
