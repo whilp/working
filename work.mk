@@ -36,14 +36,18 @@ $(issue): $(ah) $(cosmic)
 # --- clone ---
 
 branch = $(shell jq -r .branch $(issue) 2>/dev/null)
+repo_sha := $(repo_dir)/sha
 
 $(repo_dir)/.git:
 	@echo "==> clone $(REPO)"
 	@gh repo clone $(REPO) $(repo_dir)
 
-.PHONY: clone
-clone: $(repo_dir)/.git $(issue)
+$(repo_sha): $(repo_dir)/.git $(issue)
 	@echo "==> fetch"
 	@git -C $(repo_dir) fetch origin
 	@echo "==> checkout $(branch)"
 	@git -C $(repo_dir) checkout -B $(branch) $(default_branch)
+	@git -C $(repo_dir) rev-parse HEAD > $@
+
+.PHONY: clone
+clone: $(repo_sha)
