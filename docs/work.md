@@ -3,12 +3,16 @@
 the system implements a PDCA (plan-do-check-act) loop for github issues. `make work` drives the full cycle:
 
 ```
-pick → clone → plan → do → push → check → act
+iterate → pick → clone → plan → do → push → check → act
 ```
+
+iterate runs first to prioritize addressing PR review feedback over starting new work. if iterate finds and addresses a PR, work completes early. otherwise, the normal pick flow runs.
 
 each phase is a make target with file-based dependencies. outputs go to `o/`.
 
 ## phases
+
+**iterate** — checks for open PRs with `CHANGES_REQUESTED` review status. if found, reads review feedback, checks out the PR branch, addresses comments, commits, and pushes. writes `o/iterate/iterate.json` with status `done` or `skip`.
 
 **pick** — selects one open `todo`-labeled issue from the target repo. ensures labels exist, checks PR limits, picks by priority/age/clarity. transitions the issue to `doing`. writes `o/pick/issue.json`.
 
@@ -38,6 +42,10 @@ each phase runs `ah` (the agent harness) with:
 - a required output file (`--must-produce`)
 
 ## tools
+
+**iterate tools** (`skills/iterate/tools/`):
+- `list-reviewed-prs.tl` — list open PRs with `CHANGES_REQUESTED` review status via `gh pr list`
+- `get-pr-feedback.tl` — get review comments and details for a PR via `gh pr view`
 
 **pick tools** (`skills/pick/tools/`):
 - `list-issues.tl` — fetch open `todo` issues via `gh issue list`
