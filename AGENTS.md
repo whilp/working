@@ -30,9 +30,22 @@ REPO=whilp/ah make clone
 REPO=whilp/ah make plan
 REPO=whilp/ah make do
 REPO=whilp/ah make check
+
+# run reflect loop
+REPO=whilp/ah make reflect
+
+# run individual reflect phases
+REPO=whilp/ah make fetch
+REPO=whilp/ah make analyze
+REPO=whilp/ah make publish
+
+# reflect on a specific date
+REPO=whilp/ah DATE=2025-01-15 make reflect
 ```
 
 the github workflow runs on a schedule (hourly) or via manual dispatch. it matrices over configured repos.
+
+the reflect workflow runs daily at 06:00 UTC or via manual dispatch. it analyzes the previous day's workflow runs.
 
 ## setup
 
@@ -48,6 +61,7 @@ the workflow requires two secrets:
 | contents | read and write | clone, push branches |
 | issues | read and write | list issues, transition labels, comment |
 | pull requests | read and write | create PRs |
+| actions | read-only | list workflow runs, download logs and artifacts |
 | metadata | read-only | required by github for all fine-grained PATs |
 
 ## structure
@@ -55,6 +69,7 @@ the workflow requires two secrets:
 ```
 Makefile              build, test, ci targets; cosmic/ah dependency fetching
 work.mk               work loop targets (pick → clone → plan → do → push → check → act)
+reflect.mk            reflect loop targets (fetch → analyze → publish)
 skills/               agent skills and their tools
   pick/               select next issue from github
     SKILL.md          pick skill prompt
@@ -68,9 +83,15 @@ skills/               agent skills and their tools
   act/                execute actions (comment, create PR, update labels)
     SKILL.md          act skill prompt
     tools/            tl tool modules for act (comment-issue, create-pr, set-issue-labels)
+  reflect/            retrospective analysis of workflow runs
+    SKILL-fetch.md    fetch skill prompt
+    SKILL-analyze.md  analyze skill prompt (sandboxed)
+    SKILL-publish.md  publish skill prompt
+    tools/            tl tool modules for reflect (list-workflow-runs)
 .github/workflows/
   test.yml            CI: runs `make -j ci` on push/PR
   work.yml            scheduled work loop: runs `make work` hourly
+  reflect.yml         daily reflect loop: runs `make reflect`
 ```
 
 ## docs

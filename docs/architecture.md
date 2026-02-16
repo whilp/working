@@ -67,7 +67,34 @@ tools are loaded by `ah` via `--tool name=path.tl`. the agent calls them by name
 - `create-pr.tl` — create a PR via `gh pr create`
 - `set-issue-labels.tl` — add/remove labels via `gh issue edit`
 
+**reflect tools** (`skills/reflect/tools/`):
+- `list-workflow-runs.tl` — list workflow runs in a date range, download logs and artifacts via `gh run list`/`gh run view`/`gh run download`
+
 all tools shell out to `gh` CLI. input validation happens before any subprocess is spawned.
+
+## reflect loop
+
+a separate loop for retrospective analysis. `make reflect` drives the cycle:
+
+```
+fetch → analyze → publish
+```
+
+runs daily via the `reflect.yml` workflow. outputs go to `o/reflect/`.
+
+### phases
+
+**fetch** — downloads workflow run logs and artifacts for a date range using `list_workflow_runs` tool. writes manifest and run data to `o/reflect/fetch/`. has network access (needs `gh` CLI).
+
+**analyze** — sandboxed (no network, limited unveil). reads fetched data and produces `o/reflect/analyze/reflection.md`. analyzes success rates, failure patterns, work loop outcomes, and agent friction.
+
+**publish** — commits `reflection.md` to `note/YYYY-MM-DD/reflection.md` in the target repo, pushes, and opens a PR.
+
+### configuration
+
+- `REPO` — target repository (required).
+- `DATE` — date to reflect on (default: yesterday).
+- `SINCE`/`UNTIL` — date range (default: both equal DATE).
 
 ## dependencies
 

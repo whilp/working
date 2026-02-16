@@ -104,9 +104,14 @@ help:
 	@echo "  plan                Research codebase and write a plan"
 	@echo "  do                  Execute the plan"
 	@echo "  check               Review execution and render verdict"
+	@echo "  reflect             Run reflect loop (fetch -> analyze -> publish)"
+	@echo "  fetch               Fetch workflow run logs and artifacts"
+	@echo "  analyze             Analyze fetched data into reflection.md"
+	@echo "  publish             Commit reflection.md and open PR"
 	@echo "  clean               Remove all build artifacts"
 
 include work.mk
+include reflect.mk
 
 .PHONY: clean
 clean:
