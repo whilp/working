@@ -32,4 +32,18 @@ local function test_empty_repo()
 end
 test_empty_repo()
 
+local function test_bad_repo_format()
+  local result = tool.execute({repo = "noslash"})
+  assert(result == "error: repo must be owner/name format", "should error on bad format: " .. result)
+  print("✓ list_issues rejects bad repo format")
+end
+test_bad_repo_format()
+
+local function test_bad_repo_format_extra_slash()
+  local result = tool.execute({repo = "a/b/c"})
+  assert(result == "error: repo must be owner/name format", "should error on extra slash: " .. result)
+  print("✓ list_issues rejects repo with extra slashes")
+end
+test_bad_repo_format_extra_slash()
+
 print("\nAll list_issues tests passed!")
