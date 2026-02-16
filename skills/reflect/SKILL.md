@@ -5,7 +5,7 @@ description: Analyze workflow runs and produce a daily reflection.
 
 # Reflect
 
-You are running one phase of the reflect pipeline. The phase is specified after `---` below as `PHASE=<fetch|analyze>`.
+You are running one phase of the reflect pipeline. The phase is specified after `---` below as `PHASE=<fetch|analyze-run|summarize>`.
 
 ---
 
@@ -39,39 +39,97 @@ Download workflow run logs and artifacts for a date range.
 
 ---
 
-## Phase: analyze
+## Phase: analyze-run
 
-Analyze workflow run data and produce a reflection document. You are sandboxed with no network access. All data is already in FETCH_DIR.
+Analyze a single workflow run. You are sandboxed with no network access.
 
 ### Environment
 
-- `FETCH_DIR` — directory containing fetched run data.
-- `OUTPUT_DIR` — directory to write reflection output.
+- `RUN_DIR` — directory containing this run's log and artifacts.
+- `RUN_META` — JSON string with run metadata (from manifest).
+- `OUTPUT_FILE` — path to write the analysis.
 
 ### Instructions
 
-1. Read `FETCH_DIR/manifest.json` to get the list of runs.
-2. For each run, read the log file and any artifacts.
-3. Analyze across all runs:
-   - **success rate**: how many runs passed vs failed vs cancelled?
-   - **failure patterns**: what are the common failure modes? group by error type.
-   - **duration trends**: are runs getting faster or slower?
-   - **flakiness**: are there runs that fail intermittently on the same workflow?
-   - **work loop outcomes**: for work workflow runs, what issues were attempted? what was the verdict distribution (pass/needs-fixes/fail)?
-   - **agent friction**: look at session artifacts for signs of confusion, retries, or wasted tokens.
-   - **improvements**: what concrete changes would improve reliability or efficiency?
-4. Write `OUTPUT_DIR/reflection.md` with your analysis.
+1. Parse RUN_META to get run metadata (workflowName, conclusion, displayTitle, etc.).
+2. Read `RUN_DIR/log.txt`. Focus on:
+   - error lines, failure messages, exit codes
+   - phase transitions (==> pick, ==> plan, etc.)
+   - timing (how long each phase took)
+   - key outcomes (issue picked, verdict, PR created)
+3. Check `RUN_DIR/artifacts/` for structured data:
+   - `*/pick/issue.json` — which issue was picked
+   - `*/pick/reasoning.md` — why it was picked
+   - `*/plan/plan.md` — what was planned
+   - `*/do/do.md` — what was done
+   - `*/check/actions.json` — verdict and actions
+   - `*/do/feedback.md` — if needs-fixes, what feedback
+   - `*/act.json` — final outcome
+   - `**/session*.db` — session databases (note their presence/size)
+4. Write a concise analysis to OUTPUT_FILE.
 
 ### Output
 
-Write `OUTPUT_DIR/reflection.md` in this format:
+Write OUTPUT_FILE in this format:
+
+```markdown
+## <workflowName>: <displayTitle> (<conclusion>)
+
+- **run**: <databaseId> | **event**: <event> | **branch**: <headBranch>
+- **started**: <startedAt> | **conclusion**: <conclusion>
+
+### Summary
+
+1-3 sentence summary of what happened in this run.
+
+### Issue
+
+If a work run: issue number, title, verdict, PR link (if any).
+
+### Failures
+
+If failed: root cause, relevant log lines (keep brief).
+
+### Notes
+
+Anything notable: retries, feedback loops, unusual patterns.
+```
+
+Keep it concise — under 80 lines. Focus on what matters for the daily summary.
+
+---
+
+## Phase: summarize
+
+Combine per-run analyses into a final reflection. You are sandboxed with no network access.
+
+### Environment
+
+- `ANALYSIS_DIR` — directory containing per-run analysis files.
+- `DATE` — date string (YYYY-MM-DD).
+- `OUTPUT_FILE` — path to write the reflection.
+
+### Instructions
+
+1. Read all `*.md` files in ANALYSIS_DIR.
+2. Synthesize across all runs:
+   - **success rate**: how many runs passed vs failed vs cancelled, by workflow.
+   - **failure patterns**: common failure modes grouped by root cause.
+   - **work loop outcomes**: issues attempted, verdicts, PRs created.
+   - **patterns**: trends, flakiness, duration observations.
+   - **recommendations**: concrete, actionable improvements — each specific enough to become an issue.
+3. Write OUTPUT_FILE.
+
+### Output
+
+Write OUTPUT_FILE in this format:
 
 ```markdown
 # Reflection: YYYY-MM-DD
 
 ## Summary
 
-Brief overview of the period.
+Brief overview of the day.
 
 ## Runs
 
@@ -80,17 +138,17 @@ Brief overview of the period.
 
 ## Failure Analysis
 
-Group failures by root cause. Include relevant log excerpts.
+Group failures by root cause. Include brief log excerpts where helpful.
 
 ## Work Loop Outcomes
 
-Summarize issues attempted, verdicts, and PRs created.
+Issues attempted, verdicts, PRs created.
 
 ## Patterns
 
-Observations about trends, flakiness, duration.
+Trends, flakiness, duration.
 
 ## Recommendations
 
-Concrete, actionable improvements. Each should be specific enough to become an issue.
+Concrete improvements. Each should be specific enough to become an issue.
 ```
