@@ -86,7 +86,7 @@ $(plan): $(repo_ready) $(issue) $(ah)
 	@echo "==> plan"
 	@mkdir -p $(plan_dir)
 	@timeout 180 $(ah) -n \
-		-m sonnet \
+		-m opus \
 		--sandbox \
 		--skill plan \
 		--must-produce $(plan) \
@@ -114,7 +114,7 @@ $(do_done): $(repo_ready) $(plan) $(feedback) $(issue) $(ah)
 		git -C $(repo_dir) reset --hard $(default_branch); \
 	fi
 	@timeout 300 $(ah) -n \
-		-m sonnet \
+		-m opus \
 		--sandbox \
 		--skill do \
 		--must-produce $(do_dir)/do.md \
