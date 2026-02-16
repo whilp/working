@@ -32,7 +32,7 @@ REPO=whilp/ah make do
 REPO=whilp/ah make check
 ```
 
-the github workflow runs on a schedule (every 3 hours) or via manual dispatch. it matrices over configured repos.
+the github workflow runs on a schedule (hourly) or via manual dispatch. it matrices over configured repos.
 
 ## setup
 
@@ -70,7 +70,7 @@ skills/               agent skills and their tools
     tools/            tl tool modules for act (comment-issue, create-pr, set-issue-labels)
 .github/workflows/
   test.yml            CI: runs `make -j ci` on push/PR
-  work.yml            scheduled work loop: runs `make work` every 3 hours
+  work.yml            scheduled work loop: runs `make work` hourly
 ```
 
 ## docs
