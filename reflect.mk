@@ -124,9 +124,7 @@ $(publish_done): $(reflection)
 	@cp $(reflection) note/$(DATE)/reflection.md
 	@git add note/$(DATE)/reflection.md
 	@git commit -m "reflect: add $(DATE) reflection"
-	@git -c http.https://github.com/.extraheader= \
-		-c url.https://x-access-token:$(GH_TOKEN)@github.com/.insteadOf=https://github.com/ \
-		push --force-with-lease -u origin $(reflect_branch)
+	@git push --force-with-lease -u origin $(reflect_branch)
 	@gh pr create \
 		--repo $(REFLECT_REPO) \
 		--head $(reflect_branch) \
