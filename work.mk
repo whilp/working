@@ -5,12 +5,14 @@
 # phases:
 #   pick    select an issue to work on
 #   clone   clone target repo and check out work branch
+#   plan    research the codebase and write a plan
 
 REPO ?=
 export PATH := $(CURDIR)/$(o)/bin:$(PATH)
 
 # target repo clone
 repo_dir := $(o)/repo
+abs_repo := $(CURDIR)/$(repo_dir)
 default_branch = $(shell git -C $(repo_dir) symbolic-ref refs/remotes/origin/HEAD 2>/dev/null | sed 's|refs/remotes/||')
 
 # --- pick ---
@@ -53,3 +55,26 @@ $(repo_sha): $(issue)
 
 .PHONY: clone
 clone: $(repo_sha)
+
+# --- plan ---
+
+plan_dir := $(o)/plan
+plan := $(plan_dir)/plan.md
+
+.PHONY: plan
+plan: $(plan)
+
+$(plan): $(repo_sha) $(issue) $(ah)
+	@echo "==> plan"
+	@mkdir -p $(plan_dir)
+	@cd $(repo_dir) && $(CURDIR)/$(ah) -n \
+		--sandbox \
+		--skill plan \
+		--must-produce $(abs_repo)/o/work/plan/plan.md \
+		--max-tokens 100000 \
+		--db $(CURDIR)/$(plan_dir)/session.db \
+		--unveil $(abs_repo):r \
+		--unveil $(CURDIR)/$(plan_dir):rwc \
+		--unveil $(abs_repo)/o/work/plan:rwc \
+		< $(CURDIR)/$(issue)
+	@cp $(repo_dir)/o/work/plan/plan.md $@

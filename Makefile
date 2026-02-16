@@ -52,6 +52,8 @@ help:
 	@echo "  ah                  Download ah binary"
 	@echo "  cosmic              Download cosmic binary"
 	@echo "  pick                Pick an issue (REPO=owner/repo)"
+	@echo "  clone               Clone repo and checkout work branch"
+	@echo "  plan                Research codebase and write a plan"
 	@echo "  clean               Remove all build artifacts"
 
 include work.mk
