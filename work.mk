@@ -8,7 +8,6 @@
 # the caller runs `make work` which loops until convergence or a retry limit.
 
 REPO ?=
-MAX_PRS ?= 4
 work_tl := lib/work/work.tl
 
 export PATH := $(CURDIR)/$(o)/bin:$(PATH)
@@ -17,15 +16,14 @@ export PATH := $(CURDIR)/$(o)/bin:$(PATH)
 repo_dir := $(o)/repo
 default_branch = $(shell git -C $(repo_dir) symbolic-ref refs/remotes/origin/HEAD 2>/dev/null | sed 's|refs/remotes/||')
 
-# shared env vars for all work.tl subcommands
+# shared env vars for work.tl act subcommand
 export WORK_REPO := $(REPO)
-export WORK_MAX_PRS := $(MAX_PRS)
-export WORK_INPUT := $(o)/pick/issues.json
 export WORK_ISSUE := $(o)/pick/issue.json
 export WORK_ACTIONS := $(o)/check/actions.json
 
 # named targets
-issue := $(o)/pick/issue.json
+pick_dir := $(o)/pick
+issue := $(pick_dir)/issue.json
 plan_dir := $(o)/plan
 plan := $(plan_dir)/plan.md
 do_dir := $(o)/do
@@ -44,16 +42,19 @@ act_done := $(o)/act.json
 LOOP ?= 1
 
 # --- pick ---
-# preflight (labels, pr-limit) then fetch issues, pick one, mark doing
+# preflight (labels, pr-limit), fetch issues, pick one, mark doing
 
-$(issue): $(work_tl) $(cosmic)
-	@mkdir -p $(@D)
+$(issue): $(ah) $(cosmic)
+	@mkdir -p $(pick_dir)
 	@echo "==> pick"
-	@$(work_tl) labels > /dev/null
-	@$(work_tl) pr-limit > /dev/null
-	@$(work_tl) issues > $(o)/pick/issues.json
-	@$(work_tl) issue > $@
-	@$(work_tl) doing > /dev/null
+	@timeout 60 $(ah) -n \
+		-m sonnet \
+		--skill pick \
+		--must-produce $(issue) \
+		--max-tokens 50000 \
+		--db $(pick_dir)/session.db \
+		--tool "list_issues=skills/pick/tools/list-issues.tl" \
+		<<< "REPO=$(REPO)"
 
 .PHONY: pick
 pick: $(issue)
@@ -88,6 +89,7 @@ $(plan): $(repo_sha) $(issue) $(ah)
 	@echo "==> plan"
 	@mkdir -p $(plan_dir)
 	@timeout 180 $(ah) -n \
+		-m sonnet \
 		--sandbox \
 		--skill plan \
 		--must-produce $(plan) \
@@ -115,6 +117,7 @@ $(do_done): $(repo_sha) $(plan) $(feedback) $(issue) $(ah)
 		git -C $(repo_dir) reset --hard $(default_branch); \
 	fi
 	@timeout 300 $(ah) -n \
+		-m sonnet \
 		--sandbox \
 		--skill do \
 		--must-produce $(do_dir)/do.md \
@@ -145,6 +148,7 @@ $(check_done): $(push_done) $(plan) $(issue) $(ah)
 	@echo "==> check"
 	@mkdir -p $(check_dir)
 	@timeout 180 $(ah) -n \
+		-m sonnet \
 		--sandbox \
 		--skill check \
 		--must-produce $(actions) \
