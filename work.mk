@@ -72,4 +72,7 @@ $(plan): $(repo_sha) $(issue) $(ah)
 		--must-produce $(plan) \
 		--max-tokens 100000 \
 		--db $(plan_dir)/session.db \
+		--unveil $(repo_dir):rwcx \
+		--unveil $(plan_dir):rwc \
+		--unveil .:r \
 		< $(issue)
