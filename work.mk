@@ -8,18 +8,12 @@
 # the caller runs `make work` which loops until convergence or a retry limit.
 
 REPO ?=
-work_tl := lib/work/work.tl
 
 export PATH := $(CURDIR)/$(o)/bin:$(PATH)
 
 # target repo clone
 repo_dir := $(o)/repo
-default_branch = $(shell git -C $(repo_dir) symbolic-ref refs/remotes/origin/HEAD 2>/dev/null | sed 's|refs/remotes/||')
-
-# shared env vars for work.tl act subcommand
-export WORK_REPO := $(REPO)
-export WORK_ISSUE := $(o)/pick/issue.json
-export WORK_ACTIONS := $(o)/check/actions.json
+default_branch = $(or $(shell git -C $(repo_dir) symbolic-ref refs/remotes/origin/HEAD 2>/dev/null | sed 's|refs/remotes/||'),origin/main)
 
 # named targets
 pick_dir := $(o)/pick
@@ -65,11 +59,11 @@ pick: $(issue)
 
 # --- clone ---
 
-branch = $(shell jq -r .branch $(issue) 2>/dev/null)
-repo_sha := $(repo_dir)/sha
-repo_branch := $(repo_dir)/branch
+branch = $(shell jq -r '.branch // empty' $(issue) 2>/dev/null)
+repo_ready := $(repo_dir)/sha
 
-$(repo_sha): $(issue)
+$(repo_ready): $(issue)
+	@test -n "$(branch)" || { echo "error: no branch in $(issue)"; exit 1; }
 	@if [ ! -d $(repo_dir)/.git ]; then \
 		echo "==> clone $(REPO)"; \
 		gh repo clone $(REPO) $(repo_dir); \
@@ -78,18 +72,17 @@ $(repo_sha): $(issue)
 	@git -C $(repo_dir) fetch origin
 	@echo "==> checkout $(branch)"
 	@git -C $(repo_dir) checkout -B $(branch) $(default_branch)
-	@git -C $(repo_dir) rev-parse HEAD > $(repo_sha)
-	@echo $(branch) > $(repo_branch)
+	@git -C $(repo_dir) rev-parse HEAD > $@
 
 .PHONY: clone
-clone: $(repo_sha)
+clone: $(repo_ready)
 
 # --- plan ---
 
 .PHONY: plan
 plan: $(plan)
 
-$(plan): $(repo_sha) $(issue) $(ah)
+$(plan): $(repo_ready) $(issue) $(ah)
 	@echo "==> plan"
 	@mkdir -p $(plan_dir)
 	@timeout 180 $(ah) -n \
@@ -99,7 +92,7 @@ $(plan): $(repo_sha) $(issue) $(ah)
 		--must-produce $(plan) \
 		--max-tokens 100000 \
 		--db $(plan_dir)/session-$(LOOP).db \
-		--unveil $(repo_dir):rwcx \
+		--unveil $(repo_dir):rx \
 		--unveil $(plan_dir):rwc \
 		--unveil .:r \
 		< $(issue)
@@ -113,7 +106,7 @@ $(feedback): $(plan)
 .PHONY: do
 do: $(do_done)
 
-$(do_done): $(repo_sha) $(plan) $(feedback) $(issue) $(ah)
+$(do_done): $(repo_ready) $(plan) $(feedback) $(issue) $(ah)
 	@echo "==> do"
 	@mkdir -p $(do_dir)
 	@if ! git -C $(repo_dir) diff --quiet $(default_branch)..HEAD 2>/dev/null; then \
@@ -139,6 +132,7 @@ $(do_done): $(repo_sha) $(plan) $(feedback) $(issue) $(ah)
 $(push_done): $(do_done)
 	@echo "==> push"
 	@mkdir -p $(@D)
+	@test -n "$(GH_TOKEN)" || { echo "error: GH_TOKEN not set"; exit 1; }
 	@git -C $(repo_dir) remote set-url origin https://x-access-token:$(GH_TOKEN)@github.com/$(REPO).git
 	@git -C $(repo_dir) push --force-with-lease -u origin HEAD
 	@touch $@
@@ -168,6 +162,11 @@ $(check_done): $(push_done) $(plan) $(issue) $(ah)
 
 # --- act ---
 
+work_tl := lib/work/work.tl
+export WORK_REPO := $(REPO)
+export WORK_ISSUE := $(o)/pick/issue.json
+export WORK_ACTIONS := $(o)/check/actions.json
+
 $(act_done): $(check_done) $(issue) $(work_tl) $(cosmic)
 	@mkdir -p $(@D)
 	@echo "==> act"
@@ -180,7 +179,7 @@ $(act_done): $(check_done) $(issue) $(work_tl) $(cosmic)
 # earlier attempts tolerate failure; only the last must succeed.
 # when check writes feedback.md, do_done becomes stale and re-runs.
 .PHONY: work
-converge := $(MAKE) REPO=$(REPO) $(act_done)
+converge := $(MAKE) "REPO=$(REPO)" $(act_done)
 work:
 	-@LOOP=1 $(converge)
 	-@LOOP=2 $(converge)
