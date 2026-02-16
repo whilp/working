@@ -54,6 +54,8 @@ help:
 	@echo "  pick                Pick an issue (REPO=owner/repo)"
 	@echo "  clone               Clone repo and checkout work branch"
 	@echo "  plan                Research codebase and write a plan"
+	@echo "  do                  Execute the plan"
+	@echo "  check               Review execution and render verdict"
 	@echo "  clean               Remove all build artifacts"
 
 include work.mk
