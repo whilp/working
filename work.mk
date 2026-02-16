@@ -60,8 +60,6 @@ clone: $(repo_sha)
 plan_dir := $(o)/plan
 plan := $(plan_dir)/plan.md
 
-plan_skill := skills/plan/SKILL.md
-
 .PHONY: plan
 plan: $(plan)
 
@@ -70,8 +68,8 @@ $(plan): $(repo_sha) $(issue) $(ah)
 	@mkdir -p $(plan_dir)
 	@$(ah) -n \
 		--sandbox \
+		--skill plan \
 		--must-produce $(plan) \
 		--max-tokens 100000 \
 		--db $(plan_dir)/session.db \
-		<<< "$$(cat $(plan_skill))"$$'\n---\n'"$$(cat $(issue))"
-	
+		< $(issue)
