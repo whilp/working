@@ -53,7 +53,11 @@ $(issue): $(ah) $(cosmic)
 		--must-produce $(issue) \
 		--max-tokens 50000 \
 		--db $(pick_dir)/session.db \
+		--tool "ensure_labels=skills/pick/tools/ensure-labels.tl" \
+		--tool "count_open_prs=skills/pick/tools/count-open-prs.tl" \
 		--tool "list_issues=skills/pick/tools/list-issues.tl" \
+		--tool "set_issue_labels=skills/pick/tools/set-issue-labels.tl" \
+		--tool "bash=" \
 		<<< "REPO=$(REPO)"
 
 .PHONY: pick
