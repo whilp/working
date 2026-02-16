@@ -72,6 +72,7 @@ local function build_jwt(app_id: string, key_path: string): string
   return signing_input .. "." .. base64url(signature)
 end
 
+-- TODO: switch to cosmic.fetch after cosmic/issues/271 adds POST support
 local function fetch_token(jwt: string, installation_id: string): string
   local url = "https://api.github.com/app/installations/" .. installation_id .. "/access_tokens"
   local status, _, body = cosmo.Fetch(url, {
