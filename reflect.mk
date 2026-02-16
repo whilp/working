@@ -5,7 +5,7 @@
 #
 # fetch: download workflow run logs and artifacts for a date range.
 # analyze: sandboxed analysis producing reflection.md.
-# publish: commit reflection.md to note/YYYY-MM-DD/ and open a PR.
+# publish: place reflection.md in note/YYYY-MM-DD/ and open a PR.
 #
 # all runs come from whilp/working (this repo). no matrix needed.
 
@@ -24,33 +24,13 @@ reflect_branch := reflect/$(DATE)
 # directories
 fetch_dir := $(o)/reflect/fetch
 analyze_dir := $(o)/reflect/analyze
-publish_dir := $(o)/reflect/publish
-
-# use a local worktree for publishing (this repo)
-reflect_repo_dir := $(o)/reflect/repo
 
 # named targets
 fetch_done := $(fetch_dir)/fetch-done
 reflection := $(analyze_dir)/reflection.md
-publish_done := $(publish_dir)/done
+publish_done := $(o)/reflect/publish-done
 
 .DELETE_ON_ERROR:
-
-# --- clone ---
-
-reflect_repo_ready := $(reflect_repo_dir)/sha
-
-$(reflect_repo_ready):
-	@mkdir -p $(reflect_repo_dir)
-	@if [ ! -d $(reflect_repo_dir)/.git ]; then \
-		echo "==> reflect: clone $(REFLECT_REPO)"; \
-		gh repo clone $(REFLECT_REPO) $(reflect_repo_dir); \
-	fi
-	@echo "==> reflect: fetch"
-	@git -C $(reflect_repo_dir) fetch origin
-	@echo "==> reflect: checkout $(reflect_branch)"
-	@git -C $(reflect_repo_dir) checkout -B $(reflect_branch) origin/main
-	@git -C $(reflect_repo_dir) rev-parse HEAD > $@
 
 # --- fetch ---
 
@@ -92,26 +72,16 @@ analyze: $(reflection)
 
 # --- publish ---
 
-$(publish_done): $(reflection) $(reflect_repo_ready) $(ah)
-	@mkdir -p $(publish_dir)
+$(publish_done): $(reflection)
 	@echo "==> reflect: publish"
-	@timeout 60 $(ah) -n \
-		-m sonnet \
-		--sandbox \
-		--skill reflect \
-		--must-produce $(publish_done) \
-		--max-tokens 20000 \
-		--db $(publish_dir)/session.db \
-		--unveil $(reflect_repo_dir):rwcx \
-		--unveil $(analyze_dir):r \
-		--unveil $(publish_dir):rwc \
-		--unveil .:r \
-		<<< "PHASE=publish REFLECTION_FILE=$(reflection) DATE=$(DATE) REPO_DIR=$(reflect_repo_dir)"
-	@echo "==> reflect: push"
 	@test -n "$(GH_TOKEN)" || { echo "error: GH_TOKEN not set"; exit 1; }
-	@git -C $(reflect_repo_dir) remote set-url origin https://x-access-token:$(GH_TOKEN)@github.com/$(REFLECT_REPO).git
-	@git -C $(reflect_repo_dir) push --force-with-lease -u origin HEAD
-	@echo "==> reflect: create pr"
+	@git checkout -B $(reflect_branch)
+	@mkdir -p note/$(DATE)
+	@cp $(reflection) note/$(DATE)/reflection.md
+	@git add note/$(DATE)/reflection.md
+	@git commit -m "reflect: add $(DATE) reflection"
+	@git remote set-url origin https://x-access-token:$(GH_TOKEN)@github.com/$(REFLECT_REPO).git
+	@git push --force-with-lease -u origin $(reflect_branch)
 	@gh pr create \
 		--repo $(REFLECT_REPO) \
 		--head $(reflect_branch) \

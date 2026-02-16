@@ -14,7 +14,7 @@ runs daily via the `reflect.yml` workflow. outputs go to `o/reflect/`. all runs 
 
 **analyze** — sandboxed (no network, limited unveil). reads fetched data and produces `o/reflect/analyze/reflection.md`. analyzes success rates, failure patterns, work loop outcomes, and agent friction.
 
-**publish** — commits `reflection.md` to `note/YYYY-MM-DD/reflection.md` in this repo, pushes, and opens a PR.
+**publish** — plain make recipe (no agent). copies `reflection.md` to `note/YYYY-MM-DD/reflection.md`, commits, pushes a branch, and opens a PR.
 
 ## configuration
 

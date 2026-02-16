@@ -5,7 +5,7 @@ description: Analyze workflow runs and produce a daily reflection.
 
 # Reflect
 
-You are running one phase of the reflect pipeline. The phase is specified after `---` below as `PHASE=<fetch|analyze|publish>`.
+You are running one phase of the reflect pipeline. The phase is specified after `---` below as `PHASE=<fetch|analyze>`.
 
 ---
 
@@ -94,27 +94,3 @@ Observations about trends, flakiness, duration.
 
 Concrete, actionable improvements. Each should be specific enough to become an issue.
 ```
-
----
-
-## Phase: publish
-
-Commit reflection.md to the repository as a dated note.
-
-### Environment
-
-- `REFLECTION_FILE` — path to reflection.md.
-- `DATE` — date string (YYYY-MM-DD).
-- `REPO_DIR` — path to the cloned repo.
-
-### Instructions
-
-1. Read REFLECTION_FILE to verify it exists and has content.
-2. Create the directory `note/DATE/` in REPO_DIR (e.g. `note/2025-01-15/`).
-3. Copy REFLECTION_FILE to `REPO_DIR/note/DATE/reflection.md`.
-4. Stage and commit the file with message: `reflect: add DATE reflection`.
-5. The push and PR creation are handled by the Makefile. Just commit.
-
-### Output
-
-Write `o/reflect/publish-done` containing the commit SHA.
