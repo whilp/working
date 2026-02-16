@@ -1,6 +1,6 @@
 # working
 
-automated work loop for github repositories. picks issues, plans, executes, reviews, and acts — all via `make work`.
+automated work loop for github repositories. picks issues, plans, executes, reviews, and acts — all via `make work`. daily reflections via `make reflect`.
 
 ## build
 
@@ -21,22 +21,33 @@ TL_PATH='?.tl;?/init.tl;/zip/.lua/?.tl;/zip/.lua/?/init.tl;/zip/.lua/types/?.d.t
 ## usage
 
 ```bash
-# run full loop for a repo
+# run full work loop for a repo
 REPO=whilp/ah make work
 
-# run individual phases
+# run individual work phases
 REPO=whilp/ah make pick
 REPO=whilp/ah make clone
 REPO=whilp/ah make plan
 REPO=whilp/ah make do
 REPO=whilp/ah make check
+
+# run reflect loop (this repo's workflow runs)
+make reflect
+
+# run individual reflect phases
+make fetch
+make analyze
+make publish
+
+# reflect on a specific date
+DATE=2025-01-15 make reflect
 ```
 
-the github workflow runs on a schedule (hourly) or via manual dispatch. it matrices over configured repos.
+the work workflow runs hourly. the reflect workflow runs daily at 06:00 UTC. both support manual dispatch.
 
 ## setup
 
-the workflow requires two secrets:
+the workflows require two secrets:
 
 - `CLAUDE_CODE_OAUTH_TOKEN` — oauth token for claude API access.
 - `GH_TOKEN` — fine-grained github PAT with access to target repositories.
@@ -48,6 +59,7 @@ the workflow requires two secrets:
 | contents | read and write | clone, push branches |
 | issues | read and write | list issues, transition labels, comment |
 | pull requests | read and write | create PRs |
+| actions | read-only | list workflow runs, download logs and artifacts |
 | metadata | read-only | required by github for all fine-grained PATs |
 
 ## structure
@@ -55,10 +67,11 @@ the workflow requires two secrets:
 ```
 Makefile              build, test, ci targets; cosmic/ah dependency fetching
 work.mk               work loop targets (pick → clone → plan → do → push → check → act)
+reflect.mk            reflect loop targets (fetch → analyze → publish)
 skills/               agent skills and their tools
   pick/               select next issue from github
     SKILL.md          pick skill prompt
-    tools/            tl tool modules for pick (list-issues, count-open-prs, ensure-labels, set-issue-labels)
+    tools/            tl tool modules (list-issues, count-open-prs, ensure-labels, set-issue-labels)
   plan/               research codebase and write a plan
     SKILL.md          plan skill prompt
   do/                 execute the plan
@@ -67,15 +80,21 @@ skills/               agent skills and their tools
     SKILL.md          check skill prompt
   act/                execute actions (comment, create PR, update labels)
     SKILL.md          act skill prompt
-    tools/            tl tool modules for act (comment-issue, create-pr, set-issue-labels)
+    tools/            tl tool modules (comment-issue, create-pr, set-issue-labels)
+  reflect/            retrospective analysis of workflow runs
+    SKILL.md          reflect skill prompt (fetch, analyze, publish phases)
+    tools/            tl tool modules (get-workflow-runs)
 .github/workflows/
   test.yml            CI: runs `make -j ci` on push/PR
   work.yml            scheduled work loop: runs `make work` hourly
+  reflect.yml         daily reflect loop: runs `make reflect`
 ```
 
 ## docs
 
-- `docs/architecture.md` — work loop design, convergence, tool module structure
+- `docs/architecture.md` — tool modules, dependencies, ci
+- `docs/work.md` — work loop design, convergence, tools
+- `docs/reflect.md` — reflect loop design, phases, tools
 - `docs/conventions.md` — teal patterns, testing, naming, commit format
 
 ## making changes

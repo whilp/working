@@ -1,0 +1,38 @@
+name: reflect
+
+on:
+  schedule:
+    - cron: '0 6 * * *'
+  workflow_dispatch:
+    inputs:
+      date:
+        description: 'Date to reflect on (YYYY-MM-DD), or blank for yesterday'
+        required: false
+
+env:
+  GIT_AUTHOR_NAME: ${{ github.actor }}
+  GIT_AUTHOR_EMAIL: ${{ github.actor }}@users.noreply.github.com
+  GIT_COMMITTER_NAME: ${{ github.actor }}
+  GIT_COMMITTER_EMAIL: ${{ github.actor }}@users.noreply.github.com
+
+jobs:
+  reflect:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    concurrency:
+      group: reflect
+      cancel-in-progress: false
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+
+      - name: Reflect
+        env:
+          GH_TOKEN: ${{ secrets.GH_TOKEN }}
+          CLAUDE_CODE_OAUTH_TOKEN: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+        run: make -j ${{ inputs.date && format('DATE={0}', inputs.date) || '' }} reflect
+
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        if: always()
+        with:
+          name: reflect
+          path: o/
