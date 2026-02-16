@@ -14,7 +14,7 @@ You are selecting the next issue to work on from a GitHub repository.
 
 ## Instructions
 
-1. Run `list_issues` with the repo to get open todo issues.
+1. Run `list_issues` with `repo` set to the value of `REPO` to get open todo issues.
 2. Analyze the issues. For each, assess:
    - **priority**: p0 > p1 > p2 > unlabeled (check labels array)
    - **age**: older issues first (createdAt)
