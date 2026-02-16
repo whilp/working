@@ -1,6 +1,6 @@
--- skills/reflect/tools/list-workflow-runs.tl: list workflow runs in a date range
+-- skills/reflect/tools/get-workflow-runs.tl: get workflow runs in a date range
 --
--- fetches action runs and optionally downloads logs and artifacts.
+-- fetches action runs and downloads logs and artifacts.
 -- module tool: returns a Tool record for ah to load via -t
 
 local child = require("cosmic.child")
@@ -19,8 +19,8 @@ local function run(argv: {string}): boolean | string, string, number
 end
 
 return {
-  name = "list_workflow_runs",
-  description = "List GitHub Actions workflow runs in a date range and optionally download their logs and artifacts. Returns JSON array of runs with metadata.",
+  name = "get_workflow_runs",
+  description = "Get GitHub Actions workflow runs in a date range, downloading their logs and artifacts. Returns JSON array of runs with metadata.",
   input_schema = {
     type = "object",
     properties = {

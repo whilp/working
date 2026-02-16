@@ -5,9 +5,6 @@ on:
     - cron: '0 6 * * *'
   workflow_dispatch:
     inputs:
-      repo:
-        description: 'Target repository (owner/repo), or blank for all'
-        required: false
       date:
         description: 'Date to reflect on (YYYY-MM-DD), or blank for yesterday'
         required: false
@@ -23,30 +20,25 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 15
     concurrency:
-      group: reflect-${{ matrix.repo }}
+      group: reflect
       cancel-in-progress: false
-    strategy:
-      fail-fast: false
-      matrix:
-        repo: ${{ inputs.repo && fromJson(format('["{0}"]', inputs.repo)) || fromJson('["whilp/ah","whilp/cosmic","whilp/working"]') }}
     steps:
       - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
 
       - name: Reflect
         env:
-          REPO: ${{ matrix.repo }}
           DATE: ${{ inputs.date || '' }}
           GH_TOKEN: ${{ secrets.GH_TOKEN }}
           CLAUDE_CODE_OAUTH_TOKEN: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
         run: |
-          args="REPO=$REPO"
+          args=""
           if [ -n "$DATE" ]; then
-            args="$args DATE=$DATE"
+            args="DATE=$DATE"
           fi
           make $args reflect
 
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         if: always()
         with:
-          name: reflect-${{ strategy.job-index }}
+          name: reflect
           path: o/
