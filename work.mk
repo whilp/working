@@ -1,11 +1,7 @@
 # work.mk: work targets
 #
 # implements the PDCA work loop as make targets:
-#   preflight -> issue -> clone -> plan -> do -> push -> check -> act
-#
-# convention: work.tl subcommands read WORK_* env vars and write json to
-# stdout. a single pattern rule provides the recipe; dependency-only rules
-# add per-target prerequisites.
+#   pick -> clone -> plan -> do -> push -> check -> act
 #
 # convergence: check writes o/do/feedback.md when verdict is needs-fixes.
 # since do depends on feedback.md, the next make run re-executes do -> push -> check.
@@ -24,14 +20,12 @@ default_branch = $(shell git -C $(repo_dir) symbolic-ref refs/remotes/origin/HEA
 # shared env vars for all work.tl subcommands
 export WORK_REPO := $(REPO)
 export WORK_MAX_PRS := $(MAX_PRS)
-export WORK_INPUT := $(o)/preflight/issues.json
+export WORK_INPUT := $(o)/pick/issues.json
 export WORK_ISSUE := $(o)/pick/issue.json
 export WORK_ACTIONS := $(o)/check/actions.json
 
 # named targets
-all_issues := $(o)/preflight/issues.json
 issue := $(o)/pick/issue.json
-doing := $(o)/pick/doing.json
 plan_dir := $(o)/plan
 plan := $(plan_dir)/plan.md
 do_dir := $(o)/do
@@ -49,30 +43,20 @@ act_done := $(o)/act.json
 # attempt its own session database. defaults to 1 for manual runs.
 LOOP ?= 1
 
-# --- preflight ---
-
-# pattern: run work.tl subcommand, capture json stdout to output file
-$(o)/preflight/%.json: $(work_tl) $(cosmic)
-	@mkdir -p $(@D)
-	@$(work_tl) $* > $@
-
-$(all_issues): $(o)/preflight/labels.json $(o)/preflight/pr-limit.json
-
 # --- pick ---
+# preflight (labels, pr-limit) then fetch issues, pick one, mark doing
 
-# pick also uses work.tl but lives in o/pick/
-$(issue): $(all_issues) $(work_tl) $(cosmic)
+$(issue): $(work_tl) $(cosmic)
 	@mkdir -p $(@D)
 	@echo "==> pick"
+	@$(work_tl) labels > /dev/null
+	@$(work_tl) pr-limit > /dev/null
+	@$(work_tl) issues > $(o)/pick/issues.json
 	@$(work_tl) issue > $@
-
-$(doing): $(issue) $(work_tl) $(cosmic)
-	@mkdir -p $(@D)
-	@echo "==> doing"
-	@$(work_tl) doing > $@
+	@$(work_tl) doing > /dev/null
 
 .PHONY: pick
-pick: $(doing)
+pick: $(issue)
 
 # --- clone ---
 
@@ -80,7 +64,7 @@ branch = $(shell jq -r .branch $(issue) 2>/dev/null)
 repo_sha := $(repo_dir)/sha
 repo_branch := $(repo_dir)/branch
 
-$(repo_sha): $(doing)
+$(repo_sha): $(issue)
 	@if [ ! -d $(repo_dir)/.git ]; then \
 		echo "==> clone $(REPO)"; \
 		gh repo clone $(REPO) $(repo_dir); \
