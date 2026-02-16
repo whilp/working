@@ -1,5 +1,6 @@
 -- skills/act/tools/create-pr.tl: create a GitHub pull request
 --
+-- reads WORK_REPO from environment to limit scope.
 -- module tool: returns a Tool record for ah to load via -t
 
 local child = require("cosmic.child")
@@ -18,26 +19,26 @@ local function run(argv: {string}): boolean | string, string, number
   return h:read()
 end
 
+local repo = os.getenv("WORK_REPO") or ""
+
 return {
   name = "create_pr",
-  description = "Create a pull request on a GitHub repository. Returns the PR URL on success.",
+  description = "Create a pull request on the target repository (set by WORK_REPO). Returns the PR URL on success.",
   input_schema = {
     type = "object",
     properties = {
-      repo = {type = "string", description = "GitHub repository (owner/repo)"},
       branch = {type = "string", description = "Head branch name"},
       title = {type = "string", description = "PR title"},
       body = {type = "string", description = "PR body (markdown)"},
     },
-    required = {"repo", "branch", "title", "body"},
+    required = {"branch", "title", "body"},
   },
   execute = function(input: {string: any}): string
-    local repo = input.repo as string
     local branch = input.branch as string
     local title = input.title as string
     local body = input.body as string
 
-    if not repo or repo == "" then return "error: repo required" end
+    if repo == "" then return "error: WORK_REPO environment variable not set" end
     if not branch or branch == "" then return "error: branch required" end
     if not title or title == "" then return "error: title required" end
 

@@ -1,5 +1,7 @@
 -- skills/act/tools/comment-issue.tl: comment on a GitHub issue
 --
+-- reads WORK_REPO from environment to limit scope.
+-- takes issue number instead of URL.
 -- module tool: returns a Tool record for ah to load via -t
 
 local child = require("cosmic.child")
@@ -18,27 +20,34 @@ local function run(argv: {string}): boolean | string, string, number
   return h:read()
 end
 
+local repo = os.getenv("WORK_REPO") or ""
+
 return {
   name = "comment_issue",
-  description = "Post a comment on a GitHub issue.",
+  description = "Post a comment on a GitHub issue or pull request by number.",
   input_schema = {
     type = "object",
     properties = {
-      issue_url = {type = "string", description = "Full GitHub issue URL"},
+      issue_number = {type = "number", description = "Issue or PR number"},
       body = {type = "string", description = "Comment body (markdown)"},
     },
-    required = {"issue_url", "body"},
+    required = {"issue_number", "body"},
   },
   execute = function(input: {string: any}): string
-    local url = input.issue_url as string
+    local issue_number = input.issue_number as number
     local body = input.body as string
 
-    if not url or url == "" then
-      return "error: issue_url required"
+    if repo == "" then
+      return "error: WORK_REPO environment variable not set"
+    end
+    if not issue_number then
+      return "error: issue_number required"
     end
     if not body or body == "" then
       return "error: body required"
     end
+
+    local ref = repo .. "#" .. tostring(math.floor(issue_number))
 
     local fd, tmp = fs.mkstemp("/tmp/comment-XXXXXX")
     if not fd then
@@ -47,7 +56,7 @@ return {
     unix.close(fd)
     cio.barf(tmp, body)
 
-    local ok, out, code = run({"gh", "issue", "comment", url, "--body-file", tmp})
+    local ok, out, code = run({"gh", "issue", "comment", ref, "--body-file", tmp})
     fs.unlink(tmp)
 
     if not ok then

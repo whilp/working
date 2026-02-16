@@ -2,6 +2,7 @@
 --
 -- returns PRs where reviewDecision is CHANGES_REQUESTED, including their
 -- review comments and details. combines listing and feedback into one call.
+-- reads WORK_REPO from environment to limit scope.
 -- module tool: returns a Tool record for ah to load via -t
 
 local child = require("cosmic.child")
@@ -19,20 +20,18 @@ local function run(argv: {string}): boolean | string, string, number
   return h:read()
 end
 
+local repo = os.getenv("WORK_REPO") or ""
+
 return {
   name = "get_prs_with_feedback",
-  description = "List open pull requests that have CHANGES_REQUESTED review status, including their review comments. Returns a JSON array of PRs with feedback details.",
+  description = "List open pull requests that have CHANGES_REQUESTED review status, including their review comments. Returns a JSON array of PRs with feedback details. Operates on the repo set by WORK_REPO environment variable.",
   input_schema = {
     type = "object",
-    properties = {
-      repo = {type = "string", description = "GitHub repository (owner/repo)"},
-    },
-    required = {"repo"},
+    properties = {},
   },
-  execute = function(input: {string: any}): string
-    local repo = input.repo as string
-    if not repo or repo == "" then
-      return "error: repo argument required"
+  execute = function(_: {string: any}): string
+    if repo == "" then
+      return "error: WORK_REPO environment variable not set"
     end
 
     local ok, out, code = run({

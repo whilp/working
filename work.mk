@@ -14,6 +14,7 @@
 REPO ?=
 
 export PATH := $(CURDIR)/$(o)/bin:$(PATH)
+export WORK_REPO := $(REPO)
 
 # target repo clone
 repo_dir := $(o)/repo
@@ -57,7 +58,7 @@ $(issue): $(ah) $(cosmic)
 		--tool "list_issues=skills/pick/tools/list-issues.tl" \
 		--tool "set_issue_labels=skills/pick/tools/set-issue-labels.tl" \
 		--tool "bash=" \
-		<<< "REPO=$(REPO)"
+		<<< ""
 
 .PHONY: pick
 pick: $(issue)
@@ -190,7 +191,7 @@ $(act_done): $(check_done) $(issue) $(ah) $(cosmic)
 		--tool "create_pr=skills/act/tools/create-pr.tl" \
 		--tool "set_issue_labels=skills/act/tools/set-issue-labels.tl" \
 		--tool "bash=" \
-		<<< "REPO=$(REPO) ISSUE_FILE=$(issue) ACTIONS_FILE=$(actions)"
+		<<< "ISSUE_FILE=$(issue) ACTIONS_FILE=$(actions)"
 
 # --- work: convergence loop ---
 

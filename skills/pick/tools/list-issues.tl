@@ -1,6 +1,7 @@
 -- skills/pick/tools/list-issues.tl: fetch open issues from a github repo
 --
 -- returns issues that are either labeled "todo" or filed by repo collaborators.
+-- reads WORK_REPO from environment to limit scope.
 -- module tool: returns a Tool record for ah to load via -t
 
 local child = require("cosmic.child")
@@ -44,25 +45,23 @@ query($owner: String!, $name: String!, $cursor: String) {
 }
 ]]
 
+local repo = os.getenv("WORK_REPO") or ""
+
 return {
   name = "list_issues",
-  description = "Fetch open issues from a GitHub repository that are either labeled 'todo' or filed by repo collaborators (owner/member/collaborator). Pass owner/repo as the repo argument.",
+  description = "Fetch open issues from the target repository (set by WORK_REPO) that are either labeled 'todo' or filed by repo collaborators (owner/member/collaborator).",
   input_schema = {
     type = "object",
-    properties = {
-      repo = {type = "string", description = "GitHub repository (owner/repo)"},
-    },
-    required = {"repo"},
+    properties = {},
   },
-  execute = function(input: {string: any}): string
-    local repo = input.repo as string
-    if not repo or repo == "" then
-      return "error: repo argument required"
+  execute = function(_: {string: any}): string
+    if repo == "" then
+      return "error: WORK_REPO environment variable not set"
     end
 
     local owner, name = repo:match("^([^/]+)/([^/]+)$")
     if not owner or not name then
-      return "error: repo must be owner/name format"
+      return "error: WORK_REPO must be owner/name format"
     end
 
     local all_issues: {any} = {}

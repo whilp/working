@@ -1,5 +1,6 @@
 -- skills/pick/tools/count-open-prs.tl: count open PRs on a repo
 --
+-- reads WORK_REPO from environment to limit scope.
 -- module tool: returns a Tool record for ah to load via -t
 
 local child = require("cosmic.child")
@@ -17,20 +18,18 @@ local function run(argv: {string}): boolean | string, string, number
   return h:read()
 end
 
+local repo = os.getenv("WORK_REPO") or ""
+
 return {
   name = "count_open_prs",
-  description = "Count the number of open pull requests on a GitHub repository. Returns a number.",
+  description = "Count the number of open pull requests on the target repository (set by WORK_REPO). Returns a number.",
   input_schema = {
     type = "object",
-    properties = {
-      repo = {type = "string", description = "GitHub repository (owner/repo)"},
-    },
-    required = {"repo"},
+    properties = {},
   },
-  execute = function(input: {string: any}): string
-    local repo = input.repo as string
-    if not repo or repo == "" then
-      return "error: repo argument required"
+  execute = function(_: {string: any}): string
+    if repo == "" then
+      return "error: WORK_REPO environment variable not set"
     end
 
     local ok, out, code = run({"gh", "pr", "list", "--repo", repo, "--state", "open", "--json", "number"})
