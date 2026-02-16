@@ -26,6 +26,7 @@ reflect_branch := reflect/$(DATE)
 fetch_dir := $(o)/reflect/fetch
 analyze_dir := $(o)/reflect/analyze
 summarize_dir := $(o)/reflect/summarize
+publish_repo := $(o)/reflect/repo
 
 # named targets
 fetch_done := $(fetch_dir)/fetch-done
@@ -119,12 +120,19 @@ summarize: $(reflection)
 
 $(publish_done): $(reflection)
 	@echo "==> reflect: publish"
-	@git checkout -B $(reflect_branch)
-	@mkdir -p note/$(DATE)
-	@cp $(reflection) note/$(DATE)/reflection.md
-	@git add note/$(DATE)/reflection.md
-	@git commit -m "reflect: add $(DATE) reflection"
-	@git push --force-with-lease -u origin $(reflect_branch)
+	@test -n "$(GH_TOKEN)" || { echo "error: GH_TOKEN not set"; exit 1; }
+	@if [ ! -d $(publish_repo)/.git ]; then \
+		echo "  cloning $(REFLECT_REPO)"; \
+		gh repo clone $(REFLECT_REPO) $(publish_repo); \
+	fi
+	@git -C $(publish_repo) fetch origin
+	@git -C $(publish_repo) checkout -B $(reflect_branch) origin/main
+	@mkdir -p $(publish_repo)/note/$(DATE)
+	@cp $(reflection) $(publish_repo)/note/$(DATE)/reflection.md
+	@git -C $(publish_repo) add note/$(DATE)/reflection.md
+	@git -C $(publish_repo) commit -m "reflect: add $(DATE) reflection"
+	@git -C $(publish_repo) remote set-url origin https://x-access-token:$(GH_TOKEN)@github.com/$(REFLECT_REPO).git
+	@git -C $(publish_repo) push --force-with-lease -u origin $(reflect_branch)
 	@gh pr create \
 		--repo $(REFLECT_REPO) \
 		--head $(reflect_branch) \
