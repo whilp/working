@@ -47,12 +47,15 @@ the work workflow runs hourly. the reflect workflow runs daily at 06:00 UTC. bot
 
 ## setup
 
-the workflows require two secrets:
+the workflows use a github app for authentication. a fresh installation token is generated at the start of each run via `actions/create-github-app-token`.
+
+three secrets are required:
 
 - `CLAUDE_CODE_OAUTH_TOKEN` — oauth token for claude API access.
-- `GH_TOKEN` — fine-grained github PAT with access to target repositories.
+- `APP_ID` — github app id.
+- `APP_KEY` — PEM private key for the github app.
 
-`GH_TOKEN` needs a [fine-grained personal access token](https://github.com/settings/personal-access-tokens/new) with repository access to target repos and these permissions:
+the github app needs installation access to target repos (ah, cosmic, working) with these permissions:
 
 | permission | level | used for |
 |---|---|---|
@@ -60,7 +63,7 @@ the workflows require two secrets:
 | issues | read and write | list issues, transition labels, comment |
 | pull requests | read and write | create PRs |
 | actions | read-only | list workflow runs, download logs and artifacts |
-| metadata | read-only | required by github for all fine-grained PATs |
+| metadata | read-only | required by github for all apps |
 
 ## structure
 
