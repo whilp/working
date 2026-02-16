@@ -9,12 +9,12 @@ You are selecting the next issue to work on from a GitHub repository.
 
 ## Environment
 
-- `REPO` env var contains the target `owner/repo`.
+- The target `owner/repo` is provided after the `---` separator below as `REPO=<value>`.
 - You have one tool: `list_issues` which fetches open issues labeled `todo`.
 
 ## Instructions
 
-1. Run `list_issues` with `repo` set to the value of `REPO` to get open todo issues.
+1. Run `list_issues` with `repo` set to the REPO value to get open todo issues.
 2. Analyze the issues. For each, assess:
    - **priority**: p0 > p1 > p2 > unlabeled (check labels array)
    - **age**: older issues first (createdAt)

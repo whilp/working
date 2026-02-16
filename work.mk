@@ -19,10 +19,11 @@ pick: $(issue)
 $(issue): $(ah) $(cosmic)
 	@echo "==> pick"
 	@mkdir -p $(@D)
-	@REPO=$(REPO) $(ah) -n \
-		--skill pick \
+	@$(ah) -n \
 		--must-produce $(issue) \
 		--max-tokens 50000 \
 		--db $(pick)/session.db \
 		--tool "list_issues=skills/pick/tools/list-issues.tl" \
-		--tool "bash="
+		--tool "bash=" \
+		--skill pick \
+		<<< "REPO=$(REPO)"
