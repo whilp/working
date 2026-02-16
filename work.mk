@@ -1,7 +1,11 @@
 # work.mk: work targets
 #
 # implements the PDCA work loop as make targets:
-#   pick -> clone -> plan -> do -> push -> check -> act
+#   iterate (try first) -> pick -> clone -> plan -> do -> push -> check -> act
+#
+# iterate runs before pick to prioritize addressing PR review feedback over
+# starting new work. if iterate finds and addresses a PR, work is done.
+# if no PRs need iteration, the normal pick flow runs.
 #
 # convergence: check writes o/do/feedback.md when verdict is needs-fixes.
 # since do depends on feedback.md, the next make run re-executes do -> push -> check.
@@ -16,6 +20,8 @@ repo_dir := $(o)/repo
 default_branch = $(or $(shell git -C $(repo_dir) symbolic-ref refs/remotes/origin/HEAD 2>/dev/null | sed 's|refs/remotes/||'),origin/main)
 
 # named targets
+iterate_dir := $(o)/iterate
+iterate_done := $(iterate_dir)/iterate.json
 pick_dir := $(o)/pick
 issue := $(pick_dir)/issue.json
 plan_dir := $(o)/plan
@@ -34,6 +40,30 @@ act_done := $(o)/act.json
 # LOOP: set by the work target (1, 2, 3) to give each convergence
 # attempt its own session database. defaults to 1 for manual runs.
 LOOP ?= 1
+
+# --- iterate ---
+# check for PRs with review feedback; address them before picking new work
+
+$(iterate_done): $(ah) $(cosmic)
+	@mkdir -p $(iterate_dir)
+	@echo "==> iterate"
+	@if [ ! -d $(repo_dir)/.git ]; then \
+		echo "==> clone $(REPO) (for iterate)"; \
+		gh repo clone $(REPO) $(repo_dir); \
+	fi
+	@timeout 300 $(ah) -n \
+		-m opus \
+		--skill iterate \
+		--must-produce $(iterate_done) \
+		--max-tokens 200000 \
+		--db $(iterate_dir)/session.db \
+		--tool "list_reviewed_prs=skills/iterate/tools/list-reviewed-prs.tl" \
+		--tool "get_pr_feedback=skills/iterate/tools/get-pr-feedback.tl" \
+		--tool "bash=" \
+		<<< "REPO=$(REPO)"
+
+.PHONY: iterate
+iterate: $(iterate_done)
 
 # --- pick ---
 # preflight (labels, pr-limit), fetch issues, pick one, mark doing
@@ -179,15 +209,22 @@ $(act_done): $(check_done) $(issue) $(ah) $(cosmic)
 		--tool "bash=" \
 		<<< "REPO=$(REPO) ISSUE_FILE=$(issue) ACTIONS_FILE=$(actions)"
 
-# --- work: convergence loop ---
+# --- work: iterate first, then convergence loop ---
 
-# work: converge on act_done, retrying up to 3 times.
-# each attempt rebuilds the full chain (do -> push -> check -> act).
-# earlier attempts tolerate failure; only the last must succeed.
-# when check writes feedback.md, do_done becomes stale and re-runs.
+# work: first try iterate (address PR review feedback). if iterate finds
+# a PR and addresses it (status=done), work is complete. if iterate finds
+# nothing (status=skip), fall through to the normal pick→plan→do→check→act flow.
+# the normal flow converges on act_done, retrying up to 3 times.
 .PHONY: work
 converge := $(MAKE) "REPO=$(REPO)" $(act_done)
 work:
+	@$(MAKE) "REPO=$(REPO)" $(iterate_done)
+	@status=$$(jq -r '.status // "skip"' $(iterate_done) 2>/dev/null); \
+	if [ "$$status" = "done" ]; then \
+		echo "==> iterate addressed a PR, done"; \
+		exit 0; \
+	fi
+	@echo "==> no PRs to iterate, starting normal flow"
 	-@LOOP=1 $(converge)
 	-@LOOP=2 $(converge)
 	@LOOP=3 $(converge)
