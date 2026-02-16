@@ -114,34 +114,15 @@ check-format: $(all_fmt_checks)
 ci: check-types check-format test
 
 # tests
-all_test_checks := $(patsubst %,$(o)/%.test.ok,$(tl_tests))
+all_test_results := $(patsubst %.tl,$(o)/%.test,$(tl_tests))
 
-$(o)/%.tl.test.ok: %.tl $(cosmic)
+$(o)/%.test: %.tl $(cosmic)
 	@mkdir -p $(@D)
-	@d=$$(mktemp -d); \
-	if TL_PATH='$(TL_PATH_TEST)' TEST_TMPDIR=$$d $(cosmic) "$<" >$$d/out 2>&1; then \
-		echo "pass" > $@; \
-	else \
-		echo "FAIL" > $@; \
-		cat $$d/out >> $@ 2>/dev/null || true; \
-	fi; \
-	rm -rf $$d
+	@TL_PATH='$(TL_PATH_TEST)' $(cosmic) --test $@ $(cosmic) $<
 
 .PHONY: test
-test: $(all_test_checks)
-	@fail=0; total=0; \
-	for f in $(all_test_checks); do \
-		total=$$((total + 1)); \
-		src=$$(echo "$$f" | sed 's|^$(o)/||; s|\.test\.ok$$||'); \
-		if grep -q "^pass" "$$f"; then \
-			echo "  ✓ $$src"; \
-		else \
-			echo "  ✗ $$src"; sed -n '2,$$p' "$$f" | sed 's/^/    /'; \
-			fail=$$((fail + 1)); \
-		fi; \
-	done; \
-	echo ""; echo "tests: $$total run, $$fail failed"; \
-	[ $$fail -eq 0 ]
+test: $(all_test_results)
+	@$(cosmic) --report $(all_test_results)
 
 .PHONY: help
 help:
