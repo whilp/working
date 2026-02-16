@@ -39,11 +39,11 @@ branch = $(shell jq -r .branch $(issue) 2>/dev/null)
 repo_sha := $(repo_dir)/sha
 repo_branch := $(repo_dir)/branch
 
-$(repo_dir)/.git:
-	@echo "==> clone $(REPO)"
-	@gh repo clone $(REPO) $(repo_dir)
-
-$(repo_sha): $(repo_dir)/.git $(issue)
+$(repo_sha): $(issue)
+	@if [ ! -d $(repo_dir)/.git ]; then \
+		echo "==> clone $(REPO)"; \
+		gh repo clone $(REPO) $(repo_dir); \
+	fi
 	@echo "==> fetch"
 	@git -C $(repo_dir) fetch origin
 	@echo "==> checkout $(branch)"
