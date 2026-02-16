@@ -53,61 +53,26 @@ TL_PATH := /zip/.lua/?.tl;/zip/.lua/?/init.tl;/zip/.lua/types/?.d.tl;/zip/.lua/t
 TL_PATH_TEST := ?.tl;?/init.tl;$(TL_PATH)
 
 # type checking
-all_type_checks := $(patsubst %,$(o)/%.teal.ok,$(tl_srcs))
+all_type_checks := $(patsubst %,$(o)/%.types,$(tl_srcs))
 
-$(o)/%.tl.teal.ok: %.tl $(cosmic)
+$(o)/%.tl.types: %.tl $(cosmic)
 	@mkdir -p $(@D)
-	@if TL_PATH='$(TL_PATH)' $(cosmic) --check-types "$<" >/dev/null 2>$@.err; then \
-		echo "pass" > $@; \
-	else \
-		echo "FAIL" > $@; \
-		cat $@.err >> $@; \
-	fi; \
-	rm -f $@.err
+	-@TL_PATH='$(TL_PATH)' $(cosmic) --test $@ $(cosmic) --check-types $<
 
 .PHONY: check-types
 check-types: $(all_type_checks)
-	@fail=0; total=0; \
-	for f in $(all_type_checks); do \
-		total=$$((total + 1)); \
-		src=$$(echo "$$f" | sed 's|^$(o)/||; s|\.teal\.ok$$||'); \
-		if grep -q "^pass" "$$f"; then \
-			echo "  ✓ $$src"; \
-		else \
-			echo "  ✗ $$src"; sed -n '2,$$p' "$$f" | sed 's/^/    /'; \
-			fail=$$((fail + 1)); \
-		fi; \
-	done; \
-	echo ""; echo "types: $$total checked, $$fail failed"; \
-	[ $$fail -eq 0 ]
+	@$(cosmic) --report $(all_type_checks)
 
 # format checking
-all_fmt_checks := $(patsubst %,$(o)/%.fmt.ok,$(tl_srcs))
+all_fmt_checks := $(patsubst %,$(o)/%.fmt,$(tl_srcs))
 
-$(o)/%.tl.fmt.ok: %.tl $(cosmic)
+$(o)/%.tl.fmt: %.tl $(cosmic)
 	@mkdir -p $(@D)
-	@if diff -q <(cat "$<") <($(cosmic) --format "$<") >/dev/null 2>&1; then \
-		echo "pass" > $@; \
-	else \
-		echo "FAIL" > $@; \
-		diff -u "$<" <($(cosmic) --format "$<") >> $@ 2>/dev/null || true; \
-	fi
+	-@$(cosmic) --test $@ diff -u $< <($(cosmic) --format $<)
 
 .PHONY: check-format
 check-format: $(all_fmt_checks)
-	@fail=0; total=0; \
-	for f in $(all_fmt_checks); do \
-		total=$$((total + 1)); \
-		src=$$(echo "$$f" | sed 's|^$(o)/||; s|\.fmt\.ok$$||'); \
-		if grep -q "^pass" "$$f"; then \
-			echo "  ✓ $$src"; \
-		else \
-			echo "  ✗ $$src"; \
-			fail=$$((fail + 1)); \
-		fi; \
-	done; \
-	echo ""; echo "format: $$total checked, $$fail failed"; \
-	[ $$fail -eq 0 ]
+	@$(cosmic) --report $(all_fmt_checks)
 
 # ci: type checks + format checks + tests
 .PHONY: ci
