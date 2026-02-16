@@ -61,6 +61,8 @@ clone: $(repo_sha)
 plan_dir := $(o)/plan
 plan := $(plan_dir)/plan.md
 
+plan_skill := skills/plan/SKILL.md
+
 .PHONY: plan
 plan: $(plan)
 
@@ -69,12 +71,9 @@ $(plan): $(repo_sha) $(issue) $(ah)
 	@mkdir -p $(plan_dir)
 	@cd $(repo_dir) && $(CURDIR)/$(ah) -n \
 		--sandbox \
-		--skill plan \
-		--must-produce $(abs_repo)/o/work/plan/plan.md \
+		--must-produce $(abs_repo)/plan.md \
 		--max-tokens 100000 \
 		--db $(CURDIR)/$(plan_dir)/session.db \
-		--unveil $(abs_repo):r \
-		--unveil $(CURDIR)/$(plan_dir):rwc \
-		--unveil $(abs_repo)/o/work/plan:rwc \
-		< $(CURDIR)/$(issue)
-	@cp $(repo_dir)/o/work/plan/plan.md $@
+		--unveil $(abs_repo):rwc \
+		<<< "$$(cat $(CURDIR)/$(plan_skill))"$$'\n---\n'"$$(cat $(CURDIR)/$(issue))"
+	@mv $(repo_dir)/plan.md $@
