@@ -18,6 +18,38 @@ run a single test:
 TL_PATH='?.tl;?/init.tl;/zip/.lua/?.tl;/zip/.lua/?/init.tl;/zip/.lua/types/?.d.tl;/zip/.lua/types/?/init.d.tl' o/bin/cosmic skills/pick/tools/test_list_issues.tl
 ```
 
+## usage
+
+```bash
+# run full loop for a repo
+REPO=whilp/ah make work
+
+# run individual phases
+REPO=whilp/ah make pick
+REPO=whilp/ah make clone
+REPO=whilp/ah make plan
+REPO=whilp/ah make do
+REPO=whilp/ah make check
+```
+
+the github workflow runs on a schedule (every 3 hours) or via manual dispatch. it matrices over configured repos.
+
+## setup
+
+the workflow requires two secrets:
+
+- `CLAUDE_CODE_OAUTH_TOKEN` — oauth token for claude API access.
+- `GH_TOKEN` — fine-grained github PAT with access to target repositories.
+
+`GH_TOKEN` needs a [fine-grained personal access token](https://github.com/settings/personal-access-tokens/new) with repository access to target repos and these permissions:
+
+| permission | level | used for |
+|---|---|---|
+| contents | read and write | clone, push branches |
+| issues | read and write | list issues, transition labels, comment |
+| pull requests | read and write | create PRs |
+| metadata | read-only | required by github for all fine-grained PATs |
+
 ## structure
 
 ```
