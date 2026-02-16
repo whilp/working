@@ -40,7 +40,7 @@ publish_done := $(o)/reflect/publish-done
 $(fetch_done): $(ah) $(cosmic)
 	@mkdir -p $(fetch_dir)
 	@echo "==> reflect: fetch runs $(SINCE)..$(UNTIL)"
-	@timeout 120 $(ah) -n \
+	@timeout 300 $(ah) -n \
 		-m sonnet \
 		--skill reflect \
 		--must-produce $(fetch_done) \
