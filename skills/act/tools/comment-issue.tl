@@ -7,6 +7,17 @@ local cio = require("cosmic.io")
 local fs = require("cosmic.fs")
 local unix = require("cosmo.unix")
 
+local function run(argv: {string}): boolean, string, number
+   local h, err = child.spawn(argv, {
+      env = unix.environ() as {string},
+      stderr = 1,
+   })
+   if not h then
+      return false, err or "spawn failed", -1
+   end
+   return h:read()
+end
+
 return {
    name = "comment_issue",
    description = "Post a comment on a GitHub issue.",
@@ -36,8 +47,7 @@ return {
       unix.close(fd)
       cio.barf(tmp, body)
 
-      local h = child.spawn({"gh", "issue", "comment", url, "--body-file", tmp})
-      local ok, out, code = h:read()
+      local ok, out, code = run({"gh", "issue", "comment", url, "--body-file", tmp})
       fs.unlink(tmp)
 
       if not ok then

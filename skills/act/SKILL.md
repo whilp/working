@@ -15,8 +15,8 @@ You are executing the actions produced by the check phase of a work pipeline.
 
 ## Instructions
 
-1. Run `read_file` with `path` set to ISSUE_FILE. Parse the result as JSON. Extract `url` (the issue URL) and `branch`.
-2. Run `read_file` with `path` set to ACTIONS_FILE. Parse the result as JSON. Extract `verdict` and `actions` array.
+1. Read ISSUE_FILE. Parse the result as JSON. Extract `url` (the issue URL) and `branch`.
+2. Read ACTIONS_FILE. Parse the result as JSON. Extract `verdict` and `actions` array.
 3. Execute each action in order:
    - `comment_issue`: run `comment_issue` with `issue_url` and `body`.
    - `create_pr`: run `create_pr` with `repo`, `branch`, `title`, and `body`. Append `\n\nCloses #<number>` to the body if not already present (extract number from the issue URL).
