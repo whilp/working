@@ -162,15 +162,23 @@ $(check_done): $(push_done) $(plan) $(issue) $(ah)
 
 # --- act ---
 
-work_tl := lib/work/work.tl
-export WORK_REPO := $(REPO)
-export WORK_ISSUE := $(o)/pick/issue.json
-export WORK_ACTIONS := $(o)/check/actions.json
+act_dir := $(o)/act
 
-$(act_done): $(check_done) $(issue) $(work_tl) $(cosmic)
-	@mkdir -p $(@D)
+$(act_done): $(check_done) $(issue) $(ah) $(cosmic)
+	@mkdir -p $(act_dir)
 	@echo "==> act"
-	@$(work_tl) act > $@
+	@timeout 60 $(ah) -n \
+		-m sonnet \
+		--skill act \
+		--must-produce $(act_done) \
+		--max-tokens 50000 \
+		--db $(act_dir)/session-$(LOOP).db \
+		--tool "read_file=skills/act/tools/read-file.tl" \
+		--tool "comment_issue=skills/act/tools/comment-issue.tl" \
+		--tool "create_pr=skills/act/tools/create-pr.tl" \
+		--tool "set_issue_labels=skills/act/tools/set-issue-labels.tl" \
+		--tool "bash=" \
+		<<< "REPO=$(REPO) ISSUE_FILE=$(issue) ACTIONS_FILE=$(actions)"
 
 # --- work: convergence loop ---
 
