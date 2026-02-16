@@ -30,6 +30,7 @@ local function base64url(data: string): string
   return (b64:gsub("+", "-"):gsub("/", "_"):gsub("=", ""))
 end
 
+-- workaround: explicit env passthrough needed due to cosmic/issues/263
 local function run(argv: {string}, stdin: string): string, number
   local h, err = child.spawn(argv, {
     stdin = stdin,
