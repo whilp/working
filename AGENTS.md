@@ -53,7 +53,7 @@ three secrets are required:
 
 - `CLAUDE_CODE_OAUTH_TOKEN` — oauth token for claude API access.
 - `APP_ID` — github app id.
-- `APP_PRIVATE_KEY` — PEM private key for the github app.
+- `APP_KEY` — PEM private key for the github app.
 
 the github app needs installation access to target repos (ah, cosmic, working) with these permissions:
 
