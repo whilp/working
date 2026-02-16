@@ -173,7 +173,6 @@ $(act_done): $(check_done) $(issue) $(ah) $(cosmic)
 		--must-produce $(act_done) \
 		--max-tokens 50000 \
 		--db $(act_dir)/session-$(LOOP).db \
-		--tool "read_file=skills/act/tools/read-file.tl" \
 		--tool "comment_issue=skills/act/tools/comment-issue.tl" \
 		--tool "create_pr=skills/act/tools/create-pr.tl" \
 		--tool "set_issue_labels=skills/act/tools/set-issue-labels.tl" \
