@@ -67,7 +67,7 @@ the workflows require two secrets:
 ```
 Makefile              build, test, ci targets; cosmic/ah dependency fetching
 work.mk               work loop targets (pick → clone → plan → do → push → check → act)
-reflect.mk            reflect loop targets (fetch → analyze → publish)
+reflect.mk            reflect loop targets (fetch → analyze → summarize → publish)
 skills/               agent skills and their tools
   pick/               select next issue from github
     SKILL.md          pick skill prompt
@@ -82,7 +82,7 @@ skills/               agent skills and their tools
     SKILL.md          act skill prompt
     tools/            tl tool modules (comment-issue, create-pr, set-issue-labels)
   reflect/            retrospective analysis of workflow runs
-    SKILL.md          reflect skill prompt (fetch, analyze, publish phases)
+    SKILL.md          reflect skill prompt (fetch, analyze-run, summarize phases)
     tools/            tl tool modules (get-workflow-runs)
 .github/workflows/
   test.yml            CI: runs `make -j ci` on push/PR
