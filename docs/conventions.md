@@ -10,11 +10,9 @@ every tool file follows the same structure:
 
 ```teal
 local child = require("cosmic.child")
-local unix = require("cosmo.unix")
 
 local function run(argv: {string}): boolean | string, string, number
   local h, err = child.spawn(argv, {
-    env = unix.environ() as {string},
     stderr = 1,
   })
   if not h then
@@ -40,7 +38,7 @@ return {
 ```
 
 key patterns:
-- `run()` helper wraps `child.spawn` with environment passthrough and stderr merging.
+- `run()` helper wraps `child.spawn` with stderr merging.
 - validate all required inputs before spawning any subprocess. return `"error: ..."` strings on failure.
 - `execute` always returns a single string. errors are communicated as string prefixed with `"error: "`.
 - tools that write temp files use `fs.mkstemp`, then `fs.unlink` after use.
