@@ -16,6 +16,9 @@ You are planning a work item. Research the codebase and write a plan.
 
 ## Instructions
 
+First, read `o/repo/AGENTS.md` if it exists. It contains repo-specific context,
+conventions, and build instructions for the target repository. Follow its guidance.
+
 ### For PRs (type = "pr")
 
 1. Read the review comments in the `reviews` and `comments` fields.

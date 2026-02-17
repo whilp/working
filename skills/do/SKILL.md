@@ -17,6 +17,9 @@ You are executing a work item. Follow the plan.
 
 ## Setup
 
+Read `o/repo/AGENTS.md` if it exists. It contains repo-specific context,
+conventions, and build instructions for the target repository. Follow its guidance.
+
 Read `o/plan/plan.md` for the full plan.
 
 Read `o/do/feedback.md` — if non-empty, it contains review feedback from a
