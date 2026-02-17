@@ -1,6 +1,7 @@
 -- skills/pick/tools/count-open-prs.tl: count open PRs on a repo
 --
--- reads WORK_REPO from environment to limit scope.
+-- uses graphql with explicit owner/name to avoid gh CLI local repo
+-- context issues. reads WORK_REPO from environment to limit scope.
 -- module tool: returns a Tool record for ah to load via -t
 
 local child = require("cosmic.child")
@@ -16,6 +17,16 @@ local function run(argv: {string}): boolean | string, string, number
   return h:read()
 end
 
+local QUERY = [[
+query($owner: String!, $name: String!) {
+  repository(owner: $owner, name: $name) {
+    pullRequests(states: OPEN) {
+      totalCount
+    }
+  }
+}
+]]
+
 local repo = os.getenv("WORK_REPO") or ""
 
 return {
@@ -30,16 +41,36 @@ return {
       return "error: WORK_REPO environment variable not set"
     end
 
-    local ok, out, code = run({"gh", "pr", "list", "--repo", repo, "--state", "open", "--json", "number"})
+    local owner, name = repo:match("^([^/]+)/([^/]+)$")
+    if not owner or not name then
+      return "error: WORK_REPO must be owner/name format"
+    end
+
+    local ok, out, code = run({
+        "gh", "api", "graphql",
+        "-f", "query=" .. QUERY,
+        "-f", "owner=" .. owner,
+        "-f", "name=" .. name,
+      })
     if not ok then
       return "error: gh failed (exit " .. tostring(code) .. "): " .. (out or "")
     end
 
-    local prs = json.decode(out or "[]") as {any}
-    if not prs then
-      return "error: failed to parse PR list"
+    local resp = json.decode(out or "{}") as {string: any}
+    if not resp or not resp.data then
+      local errors = resp and resp.errors as {any}
+      if errors and #errors > 0 then
+        local first = errors[1] as {string: any}
+        return "error: graphql: " .. tostring(first.message or "unknown")
+      end
+      return "error: failed to parse graphql response"
     end
 
-    return tostring(#prs)
+    local data = resp.data as {string: any}
+    local repository = data.repository as {string: any}
+    local prs_conn = repository.pullRequests as {string: any}
+    local count = prs_conn.totalCount as number
+
+    return tostring(math.floor(count))
   end,
 }
