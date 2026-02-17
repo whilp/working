@@ -61,38 +61,10 @@ fetch: $(fetch_done)
 
 analyze_done := $(analyze_dir)/done
 
-$(analyze_done): $(fetch_done) $(ah)
+$(analyze_done): $(fetch_done) $(ah) $(cosmic)
 	@mkdir -p $(analyze_dir)
 	@echo "==> reflect: analyze runs"
-	@python3 -c "\
-	import json, subprocess, sys, os; \
-	manifest = json.load(open('$(fetch_dir)/manifest.json')); \
-	runs = [r for r in manifest if r.get('log_file')]; \
-	print(f'  {len(runs)} runs to analyze'); \
-	failed = 0; \
-	for r in runs: \
-	    rid = str(r['databaseId']); \
-	    out = '$(analyze_dir)/' + rid + '.md'; \
-	    run_dir = '$(fetch_dir)/' + rid; \
-	    meta = json.dumps(r); \
-	    stdin = f'PHASE=analyze-run RUN_DIR={run_dir} RUN_META={meta} OUTPUT_FILE={out}'; \
-	    print(f'  -> {rid}: {r.get(\"workflowName\",\"?\")} ({r.get(\"conclusion\",\"?\")})'); \
-	    ret = subprocess.run([ \
-	        '$(ah)', '-n', '-m', 'sonnet', \
-	        '--sandbox', \
-	        '--skill', 'reflect', \
-	        '--must-produce', out, \
-	        '--max-tokens', '30000', \
-	        '--db', '$(analyze_dir)/session-' + rid + '.db', \
-	        '--unveil', run_dir + ':r', \
-	        '--unveil', '$(analyze_dir):rwc', \
-	        '--unveil', '.:r', \
-	    ], input=stdin.encode(), timeout=120); \
-	    if ret.returncode != 0: \
-	        print(f'  !! {rid} failed (exit {ret.returncode})'); \
-	        failed += 1; \
-	print(f'  done: {len(runs) - failed}/{len(runs)} succeeded'); \
-	" || true
+	@$(cosmic) skills/reflect/tools/analyze-runs.tl $(fetch_dir) $(analyze_dir) $(ah) || true
 	@touch $@
 
 .PHONY: analyze
