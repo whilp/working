@@ -41,6 +41,9 @@ make publish
 
 # reflect on a specific date
 DATE=2025-01-15 make reflect
+
+# audit and update docs in a repo
+REPO=whilp/ah make docs
 ```
 
 the work workflow runs hourly. the reflect workflow runs daily at 06:00 UTC. both support manual dispatch.
@@ -92,6 +95,8 @@ skills/               agent skills and their tools
   triage/             review open issues, close stale ones, split oversized ones
     SKILL.md          triage skill prompt
     tools/            tl tool modules (close-issue, create-issue, grep-repo)
+  docs/               audit and update documentation against actual code
+    SKILL.md          docs skill prompt
 .github/workflows/
   test.yml            CI: runs `make -j ci` on push/PR
   work.yml            scheduled work loop: runs `make work` hourly
