@@ -28,7 +28,7 @@ all tools shell out to `gh` CLI. input validation happens before any subprocess 
 
 **ah** — agent harness. fetched as a binary in the Makefile. runs agent sessions with skills, tools, and sandbox constraints.
 
-both are pinned by version, URL, and sha256 hash in the Makefile.
+both are pinned by URL and sha256 in `deps/*.mk` files, included by the Makefile. binaries depend on their `.mk` file — changing it triggers re-fetch.
 
 ## ci
 
