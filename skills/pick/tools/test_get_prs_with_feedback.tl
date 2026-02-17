@@ -21,4 +21,30 @@ local function test_missing_env()
 end
 test_missing_env()
 
+local function test_parse_repo()
+  local parse = (tool as {string: any})._parse_repo as function(string): string, string
+  assert(parse, "should expose _parse_repo for testing")
+
+  local owner, name = parse("whilp/cosmic")
+  assert(owner == "whilp", "owner should be whilp: " .. tostring(owner))
+  assert(name == "cosmic", "name should be cosmic: " .. tostring(name))
+  print("✓ parse_repo splits owner/name correctly")
+
+  local o2, n2 = parse("invalid")
+  assert(o2 == nil, "should return nil for invalid format")
+  assert(n2 == nil, "should return nil for invalid format")
+  print("✓ parse_repo rejects invalid format")
+
+  local o3, n3 = parse("")
+  assert(o3 == nil, "should return nil for empty string")
+  assert(n3 == nil, "should return nil for empty string")
+  print("✓ parse_repo rejects empty string")
+
+  local o4, n4 = parse("a/b/c")
+  assert(o4 == nil, "should reject extra slashes: " .. tostring(o4))
+  assert(n4 == nil, "should reject extra slashes: " .. tostring(n4))
+  print("✓ parse_repo rejects extra slashes")
+end
+test_parse_repo()
+
 print("\nAll get_prs_with_feedback tests passed!")
