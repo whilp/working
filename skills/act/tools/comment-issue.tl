@@ -45,12 +45,12 @@ return {
       return "error: body required"
     end
 
-    local ref = repo .. "#" .. tostring(math.floor(issue_number))
+    local num = tostring(math.floor(issue_number))
 
     local tmp = os.tmpname()
     cio.barf(tmp, body)
 
-    local ok, out, code = run({"gh", "issue", "comment", ref, "--body-file", tmp})
+    local ok, out, code = run({"gh", "issue", "comment", num, "--repo", repo, "--body-file", tmp})
     fs.unlink(tmp)
 
     if not ok then

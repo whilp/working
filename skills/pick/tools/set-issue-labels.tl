@@ -40,8 +40,8 @@ return {
       return "error: issue_number required"
     end
 
-    local ref = repo .. "#" .. tostring(math.floor(issue_number))
-    local argv: {string} = {"gh", "issue", "edit", ref}
+    local num = tostring(math.floor(issue_number))
+    local argv: {string} = {"gh", "issue", "edit", num, "--repo", repo}
 
     local add = input.add as {string}
     if add then
