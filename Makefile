@@ -15,9 +15,9 @@ TMP ?= /tmp
 export TMPDIR := $(TMP)
 
 # cosmic dependency
-cosmic_version := 2026-02-16-ce741fe
+cosmic_version := 2026-02-17-93239ce
 cosmic_url := https://github.com/whilp/cosmic/releases/download/$(cosmic_version)/cosmic-lua
-cosmic_sha := 3768aa209638248dc73e2c5d3382d896eacbfc170505ca4d1c72392af48e3b34
+cosmic_sha := f7847182ec5c1c205e34b5e99dd68ddb02e280fda0f9cad4ee7eb19fd52a4858
 cosmic := $(o)/bin/cosmic
 cosmic_stamp := $(o)/stamps/cosmic.$(cosmic_version)
 
@@ -34,9 +34,9 @@ $(cosmic_stamp):
 	@touch $@
 
 # ah dependency
-ah_version := 2026-02-16-9361ef4
+ah_version := 2026-02-16-7ff38af
 ah_url := https://github.com/whilp/ah/releases/download/$(ah_version)/ah
-ah_sha := 7e3e11ef9b5225d005c4d76a1ca9f7e440400f4da87d1a0d2f929c30314059dd
+ah_sha := 8fc8d1752adbaebc72d2135e141d43f2c2b67501583165c66adb1096624134b9
 ah := $(o)/bin/ah
 ah_stamp := $(o)/stamps/ah.$(ah_version)
 
