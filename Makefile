@@ -103,6 +103,7 @@ help:
 	@echo "  do                  Execute the plan"
 	@echo "  check               Review execution and render verdict"
 	@echo "  triage              Review open issues and close stale ones (REPO=owner/repo)"
+	@echo "  docs                Audit and update documentation files (REPO=owner/repo)"
 	@echo "  reflect             Run reflect loop (fetch -> analyze -> publish)"
 	@echo "  fetch               Fetch workflow run logs and artifacts"
 	@echo "  analyze             Analyze fetched data into reflection.md"
