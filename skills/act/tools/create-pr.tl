@@ -10,9 +10,8 @@ local unix = require("cosmo.unix")
 
 local function run(argv: {string}): boolean | string, string, number
   local h, err = child.spawn(argv, {
-    env = unix.environ() as {string},
-    stderr = 1,
-  })
+      stderr = 1,
+    })
   if not h then
     return false, err or "spawn failed", -1
   end
@@ -50,12 +49,12 @@ return {
     cio.barf(tmp, body or "")
 
     local ok, out, code = run({
-      "gh", "pr", "create",
-      "--repo", repo,
-      "--head", branch,
-      "--title", title,
-      "--body-file", tmp,
-    })
+        "gh", "pr", "create",
+        "--repo", repo,
+        "--head", branch,
+        "--title", title,
+        "--body-file", tmp,
+      })
     fs.unlink(tmp)
 
     if not ok then
