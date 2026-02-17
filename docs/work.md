@@ -74,3 +74,11 @@ triage categorizes each open issue as:
 - **healthy** — left alone.
 
 outputs to `o/triage/triage.json`.
+
+## docs
+
+the docs skill audits and updates documentation in a target repo by comparing docs against actual code and recent changes. it runs standalone via `REPO=owner/repo make docs`, separate from the main work loop.
+
+the skill reads recent git history, compares all documentation files against the codebase (file structure, skills, tools, make targets, workflows), identifies discrepancies, and updates doc files to match reality. it only modifies `.md` files.
+
+outputs to `o/docs/docs.md`.
