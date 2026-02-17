@@ -19,30 +19,38 @@ cosmic_version := 2026-02-16-ce741fe
 cosmic_url := https://github.com/whilp/cosmic/releases/download/$(cosmic_version)/cosmic-lua
 cosmic_sha := 3768aa209638248dc73e2c5d3382d896eacbfc170505ca4d1c72392af48e3b34
 cosmic := $(o)/bin/cosmic
+cosmic_stamp := $(o)/stamps/cosmic.$(cosmic_version)
 
 .PHONY: cosmic
 cosmic: $(cosmic)
-$(cosmic):
-	@mkdir -p $(@D)
+$(cosmic): $(cosmic_stamp)
+$(cosmic_stamp):
+	@rm -f $(o)/stamps/cosmic.* $(cosmic)
+	@mkdir -p $(@D) $(dir $(cosmic))
 	@echo "==> fetching cosmic $(cosmic_version)"
-	@curl -fsSL -o $@ $(cosmic_url)
-	@echo "$(cosmic_sha)  $@" | sha256sum -c - >/dev/null
-	@chmod +x $@
+	@curl -fsSL -o $(cosmic) $(cosmic_url)
+	@echo "$(cosmic_sha)  $(cosmic)" | sha256sum -c - >/dev/null
+	@chmod +x $(cosmic)
+	@touch $@
 
 # ah dependency
 ah_version := 2026-02-16-9361ef4
 ah_url := https://github.com/whilp/ah/releases/download/$(ah_version)/ah
 ah_sha := 7e3e11ef9b5225d005c4d76a1ca9f7e440400f4da87d1a0d2f929c30314059dd
 ah := $(o)/bin/ah
+ah_stamp := $(o)/stamps/ah.$(ah_version)
 
 .PHONY: ah
 ah: $(ah)
-$(ah):
-	@mkdir -p $(@D)
+$(ah): $(ah_stamp)
+$(ah_stamp):
+	@rm -f $(o)/stamps/ah.* $(ah)
+	@mkdir -p $(@D) $(dir $(ah))
 	@echo "==> fetching ah $(ah_version)"
-	@curl -fsSL -o $@ $(ah_url)
-	@echo "$(ah_sha)  $@" | sha256sum -c - >/dev/null
-	@chmod +x $@
+	@curl -fsSL -o $(ah) $(ah_url)
+	@echo "$(ah_sha)  $(ah)" | sha256sum -c - >/dev/null
+	@chmod +x $(ah)
+	@touch $@
 
 # sources
 tl_all := $(wildcard skills/*/tools/*.tl)
