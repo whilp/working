@@ -246,3 +246,42 @@ $(triage_done): $(triage_repo_ready) $(ah) $(cosmic)
 		--tool "grep_repo=skills/triage/tools/grep-repo.tl" \
 		--tool "bash=" \
 		<<< ""
+
+# --- docs ---
+# standalone target: audit and update documentation in a target repo.
+# requires REPO and a cloned repo. not part of the main work chain.
+
+docs_dir := $(o)/docs
+docs_done := $(docs_dir)/docs.md
+
+# docs needs the repo cloned and on the default branch.
+docs_repo_ready := $(docs_dir)/.repo-ready
+
+$(docs_repo_ready):
+	@if [ ! -d $(repo_dir)/.git ]; then \
+		echo "==> clone $(REPO)"; \
+		gh repo clone $(REPO) $(repo_dir); \
+	fi
+	@echo "==> fetch and checkout default branch for docs"
+	@git -C $(repo_dir) fetch origin
+	@git -C $(repo_dir) checkout $(default_branch:origin/%=%)
+	@git -C $(repo_dir) pull origin $(default_branch:origin/%=%)
+	@mkdir -p $(docs_dir)
+	@touch $@
+
+.PHONY: docs
+docs: $(docs_done)
+
+$(docs_done): $(docs_repo_ready) $(ah)
+	@echo "==> docs"
+	@mkdir -p $(docs_dir)
+	@timeout 300 $(ah) -n \
+		-m sonnet \
+		--sandbox \
+		--skill docs \
+		--must-produce $(docs_done) \
+		--max-tokens 100000 \
+		--db $(docs_dir)/session.db \
+		--unveil $(repo_dir):rwc \
+		--unveil .:r \
+		<<< ""
