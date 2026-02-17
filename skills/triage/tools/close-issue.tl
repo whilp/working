@@ -52,8 +52,8 @@ return {
       return "error: invalid reason: " .. reason .. " (must be completed or 'not planned')"
     end
 
-    local ref = repo .. "#" .. tostring(math.floor(issue_number))
-    local argv: {string} = {"gh", "issue", "close", ref, "--reason", reason}
+    local num = tostring(math.floor(issue_number))
+    local argv: {string} = {"gh", "issue", "close", num, "--repo", repo, "--reason", reason}
 
     local ok, out, code = run(argv)
     if not ok then
