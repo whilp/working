@@ -142,7 +142,7 @@ whilp/working but not to the target repos at that moment.
    push (`git remote set-url origin https://x-access-token:$GH_TOKEN@github.com/...`).
    Currently the cloned repo has no credentials and push fails (seen in run 22071650965).
 
-2. **Normalize pick error codes**: define a fixed enum of error values for `o/pick/issue.json`
+2. **Normalize pick error codes** (#65): define a fixed enum of error values for `o/pick/issue.json`
    (`{"error": "auth_failure"}`, `{"error": "no_issues"}`, `{"error": "api_failure"}`).
    Inconsistent strings ("no issues" vs "api failure" vs "authentication failed") confuse
    downstream diagnosis and make error patterns harder to detect.
@@ -156,9 +156,9 @@ whilp/working but not to the target repos at that moment.
    differently under `workflow_dispatch` vs `schedule`. Add a debug step logging token
    expiry and scopes.
 
-5. **gh exit code handling in pick**: distinguish gh exit 4 (resource not found / no access)
+5. **gh exit code handling in pick** (#66): distinguish gh exit 4 (resource not found / no access)
    from other errors. Currently exit 4 surfaces as "no issues" in some codepaths, masking
    real permission errors.
 
-6. **Sanitize artifact names**: replace `/` with `-` in artifact names derived from REPO
+6. **Sanitize artifact names** (#67): replace `/` with `-` in artifact names derived from REPO
    (e.g. `work-whilp-ah` instead of `work-whilp/ah`). Add a guard or note in work.yml.
