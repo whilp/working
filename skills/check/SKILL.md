@@ -16,6 +16,9 @@ You are checking a work item. Review the execution against the plan.
 
 ## Setup
 
+Read `o/repo/AGENTS.md` if it exists. It contains repo-specific context,
+conventions, and build instructions for the target repository. Follow its guidance.
+
 Read `o/plan/plan.md` for the plan. Read `o/do/do.md` for the execution summary.
 
 ## Instructions
