@@ -9,6 +9,8 @@ local function test_tool_record()
   assert(tool.input_schema, "should have input_schema")
   local schema = tool.input_schema as {string: any}
   assert(schema.type == "object", "schema type should be object")
+  local props = schema.properties as {string: any}
+  assert(props.labels, "should have labels property")
   assert(tool.execute, "should have execute function")
   print("✓ ensure_labels tool record is valid")
 end

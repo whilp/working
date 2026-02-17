@@ -87,6 +87,9 @@ skills/               agent skills and their tools
   reflect/            retrospective analysis of workflow runs
     SKILL.md          reflect skill prompt (fetch, analyze-run, summarize phases)
     tools/            tl tool modules (get-workflow-runs)
+  triage/             review open issues, close stale ones, split oversized ones
+    SKILL.md          triage skill prompt
+    tools/            tl tool modules (close-issue, create-issue, grep-repo)
 .github/workflows/
   test.yml            CI: runs `make -j ci` on push/PR
   work.yml            scheduled work loop: runs `make work` hourly

@@ -201,3 +201,48 @@ work:
 	-@LOOP=1 $(converge)
 	-@LOOP=2 $(converge)
 	@LOOP=3 $(converge)
+
+# --- triage ---
+# standalone target: review open issues, close stale ones, split oversized ones.
+# requires REPO and a cloned repo. not part of the main work chain.
+
+triage_dir := $(o)/triage
+triage_done := $(triage_dir)/triage.json
+
+# triage needs the repo cloned and on the default branch.
+# use a phony target to always ensure correct state.
+triage_repo_ready := $(triage_dir)/.repo-ready
+
+$(triage_repo_ready):
+	@if [ ! -d $(repo_dir)/.git ]; then \
+		echo "==> clone $(REPO)"; \
+		gh repo clone $(REPO) $(repo_dir); \
+	fi
+	@echo "==> fetch and checkout default branch for triage"
+	@git -C $(repo_dir) fetch origin
+	@git -C $(repo_dir) checkout $(default_branch:origin/%=%)
+	@git -C $(repo_dir) pull origin $(default_branch:origin/%=%)
+	@mkdir -p $(triage_dir)
+	@touch $@
+
+.PHONY: triage
+triage: $(triage_done)
+
+$(triage_done): $(triage_repo_ready) $(ah) $(cosmic)
+	@echo "==> triage"
+	@mkdir -p $(triage_dir)
+	@timeout 300 $(ah) -n \
+		-m sonnet \
+		--skill triage \
+		--must-produce $(triage_done) \
+		--max-tokens 100000 \
+		--db $(triage_dir)/session.db \
+		--tool "list_issues=skills/pick/tools/list-issues.tl" \
+		--tool "ensure_labels=skills/pick/tools/ensure-labels.tl" \
+		--tool "close_issue=skills/triage/tools/close-issue.tl" \
+		--tool "create_issue=skills/triage/tools/create-issue.tl" \
+		--tool "comment_issue=skills/act/tools/comment-issue.tl" \
+		--tool "set_issue_labels=skills/act/tools/set-issue-labels.tl" \
+		--tool "grep_repo=skills/triage/tools/grep-repo.tl" \
+		--tool "bash=" \
+		<<< ""

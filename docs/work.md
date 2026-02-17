@@ -52,3 +52,25 @@ each phase runs `ah` (the agent harness) with:
 - `comment-issue.tl` — post a comment via `gh issue comment`
 - `create-pr.tl` — create a PR via `gh pr create`
 - `set-issue-labels.tl` — add/remove labels via `gh issue edit`
+
+**triage tools** (`skills/triage/tools/`):
+- `close-issue.tl` — close an issue via `gh issue close` with reason (completed/not_planned)
+- `create-issue.tl` — create a new issue via `gh issue create`
+- `grep-repo.tl` — search the target repo for patterns via grep
+
+triage also reuses `list-issues` from pick and `comment-issue`/`set-issue-labels` from act.
+
+## triage
+
+the triage skill reviews open issues in a target repo and closes stale ones. it runs standalone via `REPO=owner/repo make triage`, separate from the main work loop.
+
+triage categorizes each open issue as:
+
+- **obsolete** — referenced code/feature was removed. closed with reason `not_planned`.
+- **already resolved** — problem was fixed but issue left open. closed with reason `completed`.
+- **duplicate** — overlaps another open issue. closed with reason `not_planned`.
+- **underspecified** — too vague to act on. labeled `needs-info` with a comment asking for clarification.
+- **oversized** — too large for a single work session. split into sub-issues, parent closed.
+- **healthy** — left alone.
+
+outputs to `o/triage/triage.json`.
