@@ -6,7 +6,6 @@
 local child = require("cosmic.child")
 local cio = require("cosmic.io")
 local fs = require("cosmic.fs")
-local unix = require("cosmo.unix")
 
 local function run(argv: {string}): boolean | string, string, number
   local h, err = child.spawn(argv, {
@@ -41,11 +40,7 @@ return {
     if not branch or branch == "" then return "error: branch required" end
     if not title or title == "" then return "error: title required" end
 
-    local fd, tmp = fs.mkstemp("/tmp/pr-body-XXXXXX")
-    if not fd then
-      return "error: could not create temp file"
-    end
-    unix.close(fd)
+    local tmp = os.tmpname()
     cio.barf(tmp, body or "")
 
     local ok, out, code = run({

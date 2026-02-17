@@ -7,7 +7,6 @@
 local child = require("cosmic.child")
 local cio = require("cosmic.io")
 local fs = require("cosmic.fs")
-local unix = require("cosmo.unix")
 
 local function run(argv: {string}): boolean | string, string, number
   local h, err = child.spawn(argv, {
@@ -48,11 +47,7 @@ return {
 
     local ref = repo .. "#" .. tostring(math.floor(issue_number))
 
-    local fd, tmp = fs.mkstemp("/tmp/comment-XXXXXX")
-    if not fd then
-      return "error: could not create temp file"
-    end
-    unix.close(fd)
+    local tmp = os.tmpname()
     cio.barf(tmp, body)
 
     local ok, out, code = run({"gh", "issue", "comment", ref, "--body-file", tmp})
