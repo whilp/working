@@ -38,6 +38,10 @@ $(ah): deps/ah.mk
 	@echo "$(ah_sha)  $@" | sha256sum -c - >/dev/null
 	@chmod +x $@
 
+.PHONY: ah cosmic
+ah: $(ah)
+cosmic: $(cosmic)
+
 # sources
 tl_all := $(wildcard skills/*/tools/*.tl)
 tl_tests := $(wildcard skills/*/tools/test_*.tl)
@@ -103,6 +107,8 @@ help:
 	@echo "  fetch               Fetch workflow run logs and artifacts"
 	@echo "  analyze             Analyze fetched data into reflection.md"
 	@echo "  publish             Commit reflection.md and open PR"
+	@echo "  ah                  Fetch ah binary"
+	@echo "  cosmic              Fetch cosmic binary"
 	@echo "  clean               Remove all build artifacts"
 
 include work.mk
