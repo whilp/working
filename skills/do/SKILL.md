@@ -35,8 +35,10 @@ previous check. Address those issues first, then continue with any remaining pla
    b. Before staging, run `git -C o/repo status` and verify only your files are affected.
    c. Stage the specific files changed (not `git add -A`).
    d. Commit with a descriptive message for that step.
-5. Run validation steps from the plan (using `git -C o/repo` or `cd o/repo && ...`).
-6. If validation requires fixes, stage and commit them.
+5. Run format and lint checks from `o/repo/AGENTS.md` (e.g. `make check-format`,
+   `make format`). Fix any issues and amend the last commit.
+6. Run validation steps from the plan (using `git -C o/repo` or `cd o/repo && ...`).
+7. If validation requires fixes, stage and commit them.
 
 ## Forbidden
 
