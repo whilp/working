@@ -19,17 +19,20 @@ local repo = os.getenv("WORK_REPO") or ""
 
 return {
   name = "ensure_labels",
-  description = "Ensure required work labels (todo, doing, done, failed) exist on the target repository (set by WORK_REPO).",
+  description = "Ensure required labels exist on the target repository (set by WORK_REPO). Defaults to work labels (todo, doing, done, failed) if no labels specified.",
   input_schema = {
     type = "object",
-    properties = {},
+    properties = {
+      labels = {type = "array", items = {type = "string"}, description = "Labels to ensure exist (default: todo, doing, done, failed)"},
+    },
   },
-  execute = function(_: {string: any}): string
+  execute = function(input: {string: any}): string
     if repo == "" then
       return "error: WORK_REPO environment variable not set"
     end
 
-    local labels = {"todo", "doing", "done", "failed"}
+    local custom = input.labels as {string}
+    local labels: {string} = (custom and #custom > 0) and custom or {"todo", "doing", "done", "failed"}
     local errors: {string} = {}
     for _, label in ipairs(labels) do
       local ok, out = run({"gh", "label", "create", label, "--repo", repo, "--force"})
