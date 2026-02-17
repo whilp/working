@@ -13,7 +13,6 @@
 REFLECT_REPO := whilp/working
 
 export PATH := $(CURDIR)/$(o)/bin:$(PATH)
-export WORK_REPO := $(REFLECT_REPO)
 
 # date range: default to yesterday
 DATE ?= $(shell date -u -d 'yesterday' +%Y-%m-%d 2>/dev/null || date -u -v-1d +%Y-%m-%d)
@@ -41,7 +40,9 @@ publish_done := $(o)/reflect/publish-done
 $(fetch_done): $(ah) $(cosmic)
 	@mkdir -p $(fetch_dir)
 	@echo "==> reflect: fetch runs $(SINCE)..$(UNTIL)"
-	@timeout 300 $(ah) -n \
+	# WORK_REPO is set inline, not globally — a global export would clobber
+	# work.mk's WORK_REPO := $(REPO) since reflect.mk is included second.
+	@WORK_REPO=$(REFLECT_REPO) timeout 300 $(ah) -n \
 		-m sonnet \
 		--skill reflect \
 		--must-produce $(fetch_done) \
