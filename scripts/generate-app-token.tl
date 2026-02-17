@@ -17,7 +17,6 @@ local env = require("cosmic.env")
 local getopt = require("cosmic.getopt")
 local json = require("cosmic.json")
 local time = require("cosmic.time")
-local unix = require("cosmo.unix")
 
 local function die(msg: string)
   io.stderr:write("error: " .. msg .. "\n")
@@ -30,11 +29,9 @@ local function base64url(data: string): string
   return (b64:gsub("+", "-"):gsub("/", "_"):gsub("=", ""))
 end
 
--- workaround: explicit env passthrough needed due to cosmic/issues/263
 local function run(argv: {string}, stdin: string): string, number
   local h, err = child.spawn(argv, {
     stdin = stdin,
-    env = unix.environ() as {string},
     stderr = 1,
   })
   if not h then
