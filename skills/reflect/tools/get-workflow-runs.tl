@@ -5,14 +5,12 @@
 -- module tool: returns a Tool record for ah to load via -t
 
 local child = require("cosmic.child")
-local unix = require("cosmo.unix")
 local json = require("cosmic.json")
 
 local function run(argv: {string}): boolean | string, string, number
   local h, err = child.spawn(argv, {
-    env = unix.environ() as {string},
-    stderr = 1,
-  })
+      stderr = 1,
+    })
   if not h then
     return false, err or "spawn failed", -1
   end
@@ -100,10 +98,10 @@ return {
       -- download logs
       local log_file = run_dir .. "/log.txt"
       local ok_log, out_log, code_log = run({
-        "gh", "run", "view", run_id,
-        "--repo", repo,
-        "--log",
-      })
+          "gh", "run", "view", run_id,
+          "--repo", repo,
+          "--log",
+        })
       if ok_log then
         local cio = require("cosmic.io")
         cio.barf(log_file, out_log or "")
@@ -115,10 +113,10 @@ return {
       -- download artifacts
       local artifact_dir = run_dir .. "/artifacts"
       local ok_art, out_art, code_art = run({
-        "gh", "run", "download", run_id,
-        "--repo", repo,
-        "--dir", artifact_dir,
-      })
+          "gh", "run", "download", run_id,
+          "--repo", repo,
+          "--dir", artifact_dir,
+        })
       if ok_art then
         r["artifact_dir"] = artifact_dir
       else

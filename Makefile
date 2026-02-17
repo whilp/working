@@ -15,9 +15,9 @@ TMP ?= /tmp
 export TMPDIR := $(TMP)
 
 # cosmic dependency
-cosmic_version := 2026-02-14-1ae054b
+cosmic_version := 2026-02-16-ce741fe
 cosmic_url := https://github.com/whilp/cosmic/releases/download/$(cosmic_version)/cosmic-lua
-cosmic_sha := cbac27fdbd8798b59715624ce897bf4775954efb077962bb94817f2458f976ba
+cosmic_sha := 3768aa209638248dc73e2c5d3382d896eacbfc170505ca4d1c72392af48e3b34
 cosmic := $(o)/bin/cosmic
 
 .PHONY: cosmic
@@ -83,7 +83,7 @@ all_test_results := $(patsubst %.tl,$(o)/%.test,$(tl_tests))
 
 $(o)/%.test: %.tl $(cosmic)
 	@mkdir -p $(@D)
-	@TL_PATH='$(TL_PATH_TEST)' $(cosmic) --test $@ $(cosmic) $<
+	@TL_PATH='$(TL_PATH_TEST)' WORK_REPO= $(cosmic) --test $@ $(cosmic) $<
 
 .PHONY: test
 test: $(all_test_results)

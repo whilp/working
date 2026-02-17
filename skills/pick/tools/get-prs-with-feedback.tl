@@ -6,14 +6,12 @@
 -- module tool: returns a Tool record for ah to load via -t
 
 local child = require("cosmic.child")
-local unix = require("cosmo.unix")
 local json = require("cosmic.json")
 
 local function run(argv: {string}): boolean | string, string, number
   local h, err = child.spawn(argv, {
-    env = unix.environ() as {string},
-    stderr = 1,
-  })
+      stderr = 1,
+    })
   if not h then
     return false, err or "spawn failed", -1
   end
@@ -35,11 +33,11 @@ return {
     end
 
     local ok, out, code = run({
-      "gh", "pr", "list",
-      "--repo", repo,
-      "--state", "open",
-      "--json", "number,title,url,headRefName,reviewDecision,updatedAt,body",
-    })
+        "gh", "pr", "list",
+        "--repo", repo,
+        "--state", "open",
+        "--json", "number,title,url,headRefName,reviewDecision,updatedAt,body",
+      })
     if not ok then
       return "error: gh failed (exit " .. tostring(code) .. "): " .. (out or "")
     end
@@ -55,11 +53,11 @@ return {
         -- fetch review comments for this PR
         local num = pr.number as number
         local rok, rout, rcode = run({
-          "gh", "pr", "view",
-          tostring(math.floor(num)),
-          "--repo", repo,
-          "--json", "number,title,body,headRefName,reviews,comments,reviewDecision,url,updatedAt",
-        })
+            "gh", "pr", "view",
+            tostring(math.floor(num)),
+            "--repo", repo,
+            "--json", "number,title,body,headRefName,reviews,comments,reviewDecision,url,updatedAt",
+          })
         if rok then
           local detail = json.decode(rout or "{}") as {string: any}
           if detail then

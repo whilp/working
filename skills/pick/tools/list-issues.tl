@@ -5,14 +5,12 @@
 -- module tool: returns a Tool record for ah to load via -t
 
 local child = require("cosmic.child")
-local unix = require("cosmo.unix")
 local json = require("cosmic.json")
 
 local function run(argv: {string}): boolean | string, string, number
   local h, err = child.spawn(argv, {
-    env = unix.environ() as {string},
-    stderr = 1,
-  })
+      stderr = 1,
+    })
   if not h then
     return false, err or "spawn failed", -1
   end
