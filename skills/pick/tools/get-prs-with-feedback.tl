@@ -52,8 +52,6 @@ query($owner: String!, $name: String!) {
 }
 ]]
 
-local repo = os.getenv("WORK_REPO") or ""
-
 local function parse_repo(r: string): string, string
   local owner, name = r:match("^([^/]+)/([^/]+)$")
   return owner, name
@@ -68,14 +66,18 @@ return {
   },
   _parse_repo = parse_repo,
   execute = function(_: {string: any}): string
-    if repo == "" then
+    -- read env at call time to avoid stale module-level capture
+    local live_repo = os.getenv("WORK_REPO") or ""
+    if live_repo == "" then
       return "error: WORK_REPO environment variable not set"
     end
 
-    local owner, name = parse_repo(repo)
+    local owner, name = parse_repo(live_repo)
     if not owner or not name then
-      return "error: WORK_REPO must be owner/name format"
+      return "error: WORK_REPO must be owner/name format: " .. live_repo
     end
+
+    io.stderr:write("get_prs_with_feedback: querying " .. owner .. "/" .. name .. "\n")
 
     local ok, out, code = run({
         "gh", "api", "graphql",

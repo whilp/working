@@ -27,8 +27,6 @@ query($owner: String!, $name: String!) {
 }
 ]]
 
-local repo = os.getenv("WORK_REPO") or ""
-
 return {
   name = "count_open_prs",
   description = "Count the number of open pull requests on the target repository (set by WORK_REPO). Returns a number.",
@@ -37,14 +35,17 @@ return {
     properties = {},
   },
   execute = function(_: {string: any}): string
-    if repo == "" then
+    local live_repo = os.getenv("WORK_REPO") or ""
+    if live_repo == "" then
       return "error: WORK_REPO environment variable not set"
     end
 
-    local owner, name = repo:match("^([^/]+)/([^/]+)$")
+    local owner, name = live_repo:match("^([^/]+)/([^/]+)$")
     if not owner or not name then
       return "error: WORK_REPO must be owner/name format"
     end
+
+    io.stderr:write("count_open_prs: querying " .. owner .. "/" .. name .. "\n")
 
     local ok, out, code = run({
         "gh", "api", "graphql",
