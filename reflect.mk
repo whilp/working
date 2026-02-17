@@ -40,6 +40,8 @@ publish_done := $(o)/reflect/publish-done
 $(fetch_done): $(ah) $(cosmic)
 	@mkdir -p $(fetch_dir)
 	@echo "==> reflect: fetch runs $(SINCE)..$(UNTIL)"
+	# WORK_REPO is set inline, not globally — a global export would clobber
+	# work.mk's WORK_REPO := $(REPO) since reflect.mk is included second.
 	@WORK_REPO=$(REFLECT_REPO) timeout 300 $(ah) -n \
 		-m sonnet \
 		--skill reflect \
