@@ -50,7 +50,7 @@ $(fetch_done): $(ah) $(cosmic)
 		--db $(fetch_dir)/session.db \
 		--tool "get_workflow_runs=skills/reflect/tools/get-workflow-runs.tl" \
 		--tool "bash=" \
-		<<< "PHASE=fetch SINCE=$(SINCE) UNTIL=$(UNTIL) OUTPUT_DIR=$(fetch_dir)"
+		<<< "PHASE=fetch SINCE=$(SINCE) UNTIL=$(UNTIL) OUTPUT_DIR=$(fetch_dir) WORKFLOW=work"
 
 .PHONY: fetch
 fetch: $(fetch_done)
