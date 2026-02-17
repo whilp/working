@@ -18,6 +18,7 @@ Download workflow run logs and artifacts for a date range.
 - `SINCE` — start date (YYYY-MM-DD).
 - `UNTIL` — end date inclusive (YYYY-MM-DD).
 - `OUTPUT_DIR` — directory to write fetched data into.
+- `WORKFLOW` — workflow name to filter by (optional).
 
 ### Instructions
 
@@ -26,6 +27,7 @@ Download workflow run logs and artifacts for a date range.
    - `since` set to SINCE
    - `until_` set to UNTIL
    - `output_dir` set to OUTPUT_DIR
+   - `workflow` set to WORKFLOW (if provided)
 2. The tool downloads logs and artifacts for each run into OUTPUT_DIR.
 3. Verify the manifest file exists at `OUTPUT_DIR/manifest.json`.
 4. Write `OUTPUT_DIR/fetch-done` containing the number of runs fetched.
