@@ -14,37 +14,29 @@ o := o
 TMP ?= /tmp
 export TMPDIR := $(TMP)
 
-# cosmic dependency
+# dependencies
+include deps/cosmic.mk
+include deps/ah.mk
+
 cosmic := $(o)/bin/cosmic
-cosmic_stamp := $(o)/stamps/cosmic
 
-.PHONY: cosmic
-cosmic: $(cosmic)
-$(cosmic): $(cosmic_stamp)
-$(cosmic_stamp): deps/cosmic.url deps/cosmic.sha256
-	@rm -f $(cosmic)
-	@mkdir -p $(@D) $(dir $(cosmic))
-	@echo "==> fetching cosmic $$(cat deps/cosmic.url)"
-	@curl -fsSL -o $(cosmic) $$(cat deps/cosmic.url)
-	@echo "$$(cat deps/cosmic.sha256)  $(cosmic)" | sha256sum -c - >/dev/null
-	@chmod +x $(cosmic)
-	@echo $$(cat deps/cosmic.url) > $@
+$(cosmic): deps/cosmic.mk
+	@rm -f $@
+	@mkdir -p $(@D)
+	@echo "==> fetching $(cosmic_url)"
+	@curl -fsSL -o $@ $(cosmic_url)
+	@echo "$(cosmic_sha)  $@" | sha256sum -c - >/dev/null
+	@chmod +x $@
 
-# ah dependency
 ah := $(o)/bin/ah
-ah_stamp := $(o)/stamps/ah
 
-.PHONY: ah
-ah: $(ah)
-$(ah): $(ah_stamp)
-$(ah_stamp): deps/ah.url deps/ah.sha256
-	@rm -f $(ah)
-	@mkdir -p $(@D) $(dir $(ah))
-	@echo "==> fetching ah $$(cat deps/ah.url)"
-	@curl -fsSL -o $(ah) $$(cat deps/ah.url)
-	@echo "$$(cat deps/ah.sha256)  $(ah)" | sha256sum -c - >/dev/null
-	@chmod +x $(ah)
-	@echo $$(cat deps/ah.url) > $@
+$(ah): deps/ah.mk
+	@rm -f $@
+	@mkdir -p $(@D)
+	@echo "==> fetching $(ah_url)"
+	@curl -fsSL -o $@ $(ah_url)
+	@echo "$(ah_sha)  $@" | sha256sum -c - >/dev/null
+	@chmod +x $@
 
 # sources
 tl_all := $(wildcard skills/*/tools/*.tl)
