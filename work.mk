@@ -3,9 +3,10 @@
 # implements the PDCA work loop as make targets:
 #   pick -> clone -> plan -> do -> push -> check -> act
 #
-# pick prefers PRs with review feedback over new issues. when a PR with
-# CHANGES_REQUESTED is found, pick selects it and the rest of the pipeline
-# addresses the feedback. otherwise, pick selects a new issue.
+# pick prefers PRs with review feedback or failing CI checks over new issues.
+# when a PR with CHANGES_REQUESTED or failing checks is found, pick selects
+# it and the rest of the pipeline addresses the feedback. otherwise, pick
+# selects a new issue.
 #
 # convergence: check writes o/do/feedback.md when verdict is needs-fixes.
 # since do depends on feedback.md, the next make run re-executes do -> push -> check.

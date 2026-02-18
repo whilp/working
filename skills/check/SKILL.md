@@ -11,7 +11,7 @@ You are checking a work item. Review the execution against the plan.
 
 - The target repository is at `o/repo/`.
 - The work item JSON follows this prompt after `---`.
-- If `type` is `"pr"`, you are checking that review feedback was addressed.
+- If `type` is `"pr"`, you are checking that review feedback and/or CI failures were addressed (check the `reason` field).
 - If `type` is `"issue"`, you are checking new work against the plan.
 
 ## Setup
@@ -29,7 +29,7 @@ Read `o/plan/plan.md` for the plan. Read `o/do/do.md` for the execution summary.
    ```
 2. Run validation steps from the plan.
 3. Check for unintended changes.
-4. For PRs: verify each piece of review feedback was addressed.
+4. For PRs: verify each piece of review feedback was addressed and/or CI checks now pass (based on `reason` field).
 5. Write your assessment.
 
 ## Output

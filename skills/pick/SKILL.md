@@ -15,9 +15,9 @@ You are selecting the next work item from a GitHub repository. PRs with review f
 
 1. Run `ensure_labels` (no arguments needed — reads repo from environment).
 2. Run `get_prs_with_feedback` (no arguments needed).
-3. If there are PRs with `CHANGES_REQUESTED`:
+3. If there are PRs needing attention (changes requested or failing CI checks):
    a. Pick the PR with the oldest `updatedAt` (longest waiting for attention).
-   b. Write your output with `type` set to `"pr"` and the PR details.
+   b. Write your output with `type` set to `"pr"` and the PR details. Include the `reason` field from the tool result.
    c. Skip the remaining steps.
 4. Run `count_open_prs` (no arguments needed). If more than 4, write `o/pick/issue.json` with `{"error": "pr_limit"}` and stop.
 5. Run `list_issues` (no arguments needed) to get open issues (returns issues labeled `todo` plus issues filed by repo collaborators).
@@ -44,6 +44,7 @@ For a PR with feedback:
   "body": "...",
   "url": "https://github.com/owner/repo/pull/123",
   "branch": "<headRefName from PR>",
+  "reason": "<changes_requested|checks_failing|changes_requested,checks_failing>",
   "reviews": [...],
   "comments": [...]
 }
