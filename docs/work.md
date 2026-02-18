@@ -74,3 +74,15 @@ triage categorizes each open issue as:
 - **healthy** — left alone.
 
 outputs to `o/triage/triage.json`.
+
+## tests
+
+the tests skill audits and improves tests for a target repo. it runs standalone via `REPO=owner/repo make tests`, separate from the main work loop.
+
+the skill reads `AGENTS.md` to discover the repo's test conventions, then reads through the codebase and tests to find gaps and quality issues. it fixes the most impactful problems — missing tests first, then weak assertions, then broken tests.
+
+adapts to whatever testing patterns the repo uses. no fixed rubric.
+
+runs in a sandbox with read/write access to the repo. no custom tool modules.
+
+outputs to `o/tests/tests.json`.

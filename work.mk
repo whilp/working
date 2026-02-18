@@ -287,3 +287,43 @@ $(docs_done): $(docs_repo_ready) $(ah)
 		--unveil $(docs_dir):rwc \
 		--unveil .:r \
 		<<< ""
+
+# --- tests ---
+# standalone target: audit and improve tests.
+# requires REPO and a cloned repo. not part of the main work chain.
+
+tests_dir := $(o)/tests
+tests_done := $(tests_dir)/tests.json
+
+# tests needs the repo cloned and on the default branch.
+tests_repo_ready := $(tests_dir)/.repo-ready
+
+$(tests_repo_ready):
+	@if [ ! -d $(repo_dir)/.git ]; then \
+		echo "==> clone $(REPO)"; \
+		gh repo clone $(REPO) $(repo_dir); \
+	fi
+	@echo "==> fetch and checkout default branch for tests"
+	@git -C $(repo_dir) fetch origin
+	@git -C $(repo_dir) checkout $(default_branch:origin/%=%)
+	@git -C $(repo_dir) pull origin $(default_branch:origin/%=%)
+	@mkdir -p $(tests_dir)
+	@touch $@
+
+.PHONY: tests
+tests: $(tests_done)
+
+$(tests_done): $(tests_repo_ready) $(ah)
+	@echo "==> tests"
+	@mkdir -p $(tests_dir)
+	@timeout 300 $(ah) -n \
+		-m sonnet \
+		--sandbox \
+		--skill tests \
+		--must-produce $(tests_done) \
+		--max-tokens 100000 \
+		--db $(tests_dir)/session.db \
+		--unveil $(repo_dir):rwcx \
+		--unveil $(tests_dir):rwc \
+		--unveil .:r \
+		<<< ""
