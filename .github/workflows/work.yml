@@ -37,6 +37,13 @@ jobs:
           owner: ${{ github.repository_owner }}
           repositories: ah,cosmic,working
 
+      # sanitize repo name for use in artifact names (GitHub rejects slashes)
+      - name: Set safe repo name
+        id: meta
+        run: echo "safe_repo=${REPO//\//-}" >> "$GITHUB_OUTPUT"
+        env:
+          REPO: ${{ matrix.repo }}
+
       - name: Work
         env:
           REPO: ${{ matrix.repo }}
@@ -47,5 +54,5 @@ jobs:
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         if: always()
         with:
-          name: work-${{ strategy.job-index }}
+          name: work-${{ steps.meta.outputs.safe_repo || strategy.job-index }}
           path: o/
