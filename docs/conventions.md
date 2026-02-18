@@ -106,5 +106,12 @@ end
 subprocess failures include the exit code:
 
 ```teal
-return "error: gh failed (exit " .. tostring(code) .. "): " .. (out or "")
+if not ok then
+  if code == 4 then
+    return "error: gh access denied (exit 4): " .. (out or "")
+  end
+  return "error: gh failed (exit " .. tostring(code) .. "): " .. (out or "")
+end
 ```
+
+gh exit 4 means resource not found or access denied. always check for it before the generic error return so permission problems are distinguishable from other failures in logs and reflections.

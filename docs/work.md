@@ -6,13 +6,13 @@ the system implements a PDCA (plan-do-check-act) loop for github issues and PR f
 pick → clone → plan → do → push → check → act
 ```
 
-pick prefers PRs with review feedback over new issues. when a PR has `CHANGES_REQUESTED` status, the pipeline addresses that feedback. otherwise, it picks a new issue.
+pick prefers PRs with review feedback or failing CI checks over new issues. when a PR has `CHANGES_REQUESTED` status or failing checks, the pipeline addresses that. otherwise, it picks a new issue.
 
 each phase is a make target with file-based dependencies. outputs go to `o/`.
 
 ## phases
 
-**pick** — selects the next work item. first checks for open PRs with `CHANGES_REQUESTED` review status (excluding PRs labeled `needs-review`, which are waiting for the reviewer). if found, picks the oldest one. otherwise, selects one open `todo`-labeled issue. ensures labels exist, checks PR limits, picks by priority/age/clarity. transitions issues to `doing`. writes `o/pick/issue.json` with a `type` field (`"pr"` or `"issue"`).
+**pick** — selects the next work item. first checks for open PRs that need attention: `CHANGES_REQUESTED` review status or failing CI checks (excluding PRs labeled `needs-review`, which are waiting for the reviewer). if found, picks the oldest one. otherwise, selects one open `todo`-labeled issue. ensures labels exist, checks PR limits, picks by priority/age/clarity. transitions issues to `doing`. writes `o/pick/issue.json` with a `type` field (`"pr"` or `"issue"`) and, for PRs, a `reason` field indicating why it was selected.
 
 **clone** — clones (or fetches) the target repo into `o/repo/`. for PRs, checks out the existing branch. for issues, creates a fresh feature branch from the default branch.
 
@@ -42,7 +42,7 @@ each phase runs `ah` (the agent harness) with:
 ## tools
 
 **pick tools** (`skills/pick/tools/`):
-- `get-prs-with-feedback.tl` — list open PRs with `CHANGES_REQUESTED` review status (excluding `needs-review` labeled PRs) and their review comments via GraphQL
+- `get-prs-with-feedback.tl` — list open PRs needing attention: `CHANGES_REQUESTED` review status or failing CI checks (excluding `needs-review` labeled PRs) via GraphQL. includes a `reason` field.
 - `list-issues.tl` — fetch open `todo` issues via `gh issue list`
 - `count-open-prs.tl` — count open PRs via `gh pr list`
 - `ensure-labels.tl` — create `todo`/`doing`/`done`/`failed`/`needs-review` labels via `gh label create`
