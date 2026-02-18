@@ -1,9 +1,12 @@
 -- skills/pick/tools/get-prs-with-feedback.tl: list open PRs needing attention
 --
 -- returns PRs that are blocked and need work: either reviewDecision is
--- CHANGES_REQUESTED, or CI checks are failing. excludes PRs labeled
--- needs-review (already addressed, waiting for reviewer). each returned PR
--- includes a "reason" field: "changes_requested", "checks_failing", or
+-- CHANGES_REQUESTED, or CI checks are failing. for PRs labeled needs-review
+-- (already addressed, waiting for reviewer): skips if only checks are failing,
+-- and skips if the latest CHANGES_REQUESTED review predates the last commit
+-- (we already pushed a fix). includes the PR if the review postdates the last
+-- commit (new feedback from reviewer). each returned PR includes a "reason"
+-- field: "changes_requested", "checks_failing", or
 -- "changes_requested,checks_failing".
 -- uses graphql with explicit owner/name to avoid gh CLI local repo context
 -- issues. reads WORK_REPO from environment to limit scope.
@@ -42,6 +45,7 @@ query($owner: String!, $name: String!) {
         commits(last: 1) {
           nodes {
             commit {
+              committedDate
               statusCheckRollup {
                 state
               }
@@ -76,7 +80,7 @@ end
 
 return {
   name = "get_prs_with_feedback",
-  description = "List open pull requests that need attention: CHANGES_REQUESTED review status or failing CI checks. Excludes PRs labeled needs-review (already addressed, waiting for reviewer). Each PR includes a reason field. Operates on the repo set by WORK_REPO environment variable.",
+  description = "List open pull requests that need attention: CHANGES_REQUESTED review status or failing CI checks. For PRs labeled needs-review, compares the latest CHANGES_REQUESTED review timestamp against the last commit — only includes the PR if the review is newer (new feedback from reviewer). Operates on the repo set by WORK_REPO environment variable.",
   input_schema = {
     type = "object",
     properties = {},
@@ -146,8 +150,9 @@ return {
         has_changes_requested = true
       end
 
-      -- check CI status from last commit
+      -- check CI status from last commit; also capture committedDate
       local has_checks_failing = false
+      local last_commit_date: string = ""
       local commits_conn = pr.commits as {string: any}
       if commits_conn then
         local commit_nodes = commits_conn.nodes as {any} or {}
@@ -155,6 +160,7 @@ return {
           local last_commit_node = commit_nodes[#commit_nodes] as {string: any}
           local commit_obj = last_commit_node.commit as {string: any}
           if commit_obj then
+            last_commit_date = (commit_obj.committedDate as string) or ""
             local rollup = commit_obj.statusCheckRollup as {string: any}
             if rollup then
               local state = rollup.state as string
@@ -166,7 +172,41 @@ return {
         end
       end
 
-      if (has_changes_requested or has_checks_failing) and not has_needs_review then
+      -- find the latest CHANGES_REQUESTED review timestamp
+      local latest_cr_date: string = ""
+      if has_changes_requested then
+        local reviews_conn = pr.reviews as {string: any}
+        local review_nodes = reviews_conn and reviews_conn.nodes as {any} or {}
+        for _, r_any in ipairs(review_nodes) do
+          local r = r_any as {string: any}
+          if r.state == "CHANGES_REQUESTED" then
+            local submitted = (r.submittedAt as string) or ""
+            if submitted > latest_cr_date then
+              latest_cr_date = submitted
+            end
+          end
+        end
+      end
+
+      -- needs-review means "we pushed fixes, waiting for reviewer".
+      -- when both needs-review and CHANGES_REQUESTED are set, compare
+      -- the latest CHANGES_REQUESTED review against the last commit.
+      -- if the review predates the commit, we already addressed it — skip.
+      -- if the review postdates the commit, it's new feedback — include.
+      local dominated_by_needs_review = false
+      if has_needs_review then
+        if not has_changes_requested then
+          -- only signal is checks_failing; skip (transient after our push)
+          dominated_by_needs_review = true
+        elseif latest_cr_date ~= "" and last_commit_date ~= ""
+        and latest_cr_date <= last_commit_date then
+          -- review predates our fix commit; already addressed
+          dominated_by_needs_review = true
+        end
+      end
+
+      if (has_changes_requested or has_checks_failing)
+      and not dominated_by_needs_review then
         -- build reason string
         local reasons: {string} = {}
         if has_changes_requested then
