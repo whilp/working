@@ -80,6 +80,9 @@ return {
 
       local ok, out, code = run(argv)
       if not ok then
+        if code == 4 then
+          return "error: gh access denied (exit 4): " .. (out or "")
+        end
         return "error: gh failed (exit " .. tostring(code) .. "): " .. (out or "")
       end
 
