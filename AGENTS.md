@@ -107,8 +107,10 @@ skills/               agent skills and their tools
 
 ## making changes
 
-1. read the relevant skill SKILL.md and tool .tl files before editing.
-2. every tool .tl file must have a corresponding test_*.tl file.
-3. run `make ci` before committing. all checks must pass.
-4. tool modules return a table with `name`, `description`, `input_schema`, `execute`.
-5. tests validate tool record structure and input validation (no external calls).
+1. before starting work on a new problem, check the current branch with `git branch --show-current`. if on `main` (or another default branch), create and switch to a new feature branch (e.g. `git checkout -b issue-<number>-<short-description>`). never commit directly to `main`.
+2. read the relevant skill SKILL.md and tool .tl files before editing.
+3. every tool .tl file must have a corresponding test_*.tl file.
+4. run `make ci` before committing. all checks must pass.
+5. use `component: action` format for commit messages and PR titles (e.g. `pick: add priority sorting`, `docs: update setup instructions`). lowercase, imperative. common components: skill names (`pick`, `plan`, `do`, `check`, `act`, `reflect`, `triage`), `docs`, `ci`, `tools`.
+6. tool modules return a table with `name`, `description`, `input_schema`, `execute`.
+7. tests validate tool record structure and input validation (no external calls).

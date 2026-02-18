@@ -81,7 +81,17 @@ skills define:
 
 ## commits
 
-commit messages are lowercase, imperative. first line is a short summary. body explains why, not what.
+use `component: action` format for commit messages and PR titles. lowercase, imperative.
+
+examples:
+- `pick: add priority sorting`
+- `docs: update setup instructions`
+- `ci: fix test runner path`
+- `reflect: handle missing workflow runs`
+
+common components: skill names (`pick`, `plan`, `do`, `check`, `act`, `reflect`, `triage`), `docs`, `ci`, `tools`.
+
+first line is a short summary. body explains why, not what.
 
 ## error handling
 
