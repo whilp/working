@@ -325,5 +325,4 @@ $(tests_done): $(tests_repo_ready) $(ah)
 		--unveil $(repo_dir):rwcx \
 		--unveil $(tests_dir):rwc \
 		--unveil .:r \
-		--tool "bash=" \
 		<<< ""
