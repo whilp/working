@@ -35,9 +35,15 @@ return {
     local labels: {string} = (custom and #custom > 0) and custom or {"todo", "doing", "done", "failed", "needs-review"}
     local errors: {string} = {}
     for _, label in ipairs(labels) do
-      local ok, out = run({"gh", "label", "create", label, "--repo", repo, "--force"})
+      local ok, out, code = run({"gh", "label", "create", label, "--repo", repo, "--force"})
       if not ok then
-        table.insert(errors, label .. ": " .. (out or ""))
+        local msg: string
+        if code == 4 then
+          msg = label .. ": access denied (exit 4): " .. (out or "")
+        else
+          msg = label .. ": " .. (out or "")
+        end
+        table.insert(errors, msg)
       end
     end
 
