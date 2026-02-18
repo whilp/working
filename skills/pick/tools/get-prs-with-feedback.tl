@@ -1,10 +1,12 @@
--- skills/pick/tools/get-prs-with-feedback.tl: list open PRs with review feedback
+-- skills/pick/tools/get-prs-with-feedback.tl: list open PRs needing attention
 --
--- returns PRs where reviewDecision is CHANGES_REQUESTED and not labeled
--- needs-review. PRs with needs-review were already addressed and are waiting
--- for the reviewer. uses graphql with explicit owner/name to avoid gh CLI
--- local repo context issues.
--- reads WORK_REPO from environment to limit scope.
+-- returns PRs that are blocked and need work: either reviewDecision is
+-- CHANGES_REQUESTED, or CI checks are failing. excludes PRs labeled
+-- needs-review (already addressed, waiting for reviewer). each returned PR
+-- includes a "reason" field: "changes_requested", "checks_failing", or
+-- "changes_requested,checks_failing".
+-- uses graphql with explicit owner/name to avoid gh CLI local repo context
+-- issues. reads WORK_REPO from environment to limit scope.
 -- module tool: returns a Tool record for ah to load via -t
 
 local child = require("cosmic.child")
@@ -37,6 +39,15 @@ query($owner: String!, $name: String!) {
             name
           }
         }
+        commits(last: 1) {
+          nodes {
+            commit {
+              statusCheckRollup {
+                state
+              }
+            }
+          }
+        }
         reviews(last: 20) {
           nodes {
             author { login }
@@ -65,7 +76,7 @@ end
 
 return {
   name = "get_prs_with_feedback",
-  description = "List open pull requests that have CHANGES_REQUESTED review status and are not labeled needs-review. Returns a JSON array of PRs with feedback details. PRs labeled needs-review were already addressed and are waiting for the reviewer. Operates on the repo set by WORK_REPO environment variable.",
+  description = "List open pull requests that need attention: CHANGES_REQUESTED review status or failing CI checks. Excludes PRs labeled needs-review (already addressed, waiting for reviewer). Each PR includes a reason field. Operates on the repo set by WORK_REPO environment variable.",
   input_schema = {
     type = "object",
     properties = {},
@@ -115,6 +126,7 @@ return {
       local pr = node_any as {string: any}
       -- skip PRs labeled needs-review (already addressed, waiting for reviewer)
       local has_needs_review = false
+      local has_changes_requested = false
       local labels_conn = pr.labels as {string: any}
       if labels_conn then
         local label_nodes = labels_conn.nodes as {any} or {}
@@ -127,7 +139,41 @@ return {
         end
       end
 
-      if pr.reviewDecision == "CHANGES_REQUESTED" and not has_needs_review then
+      if pr.reviewDecision == "CHANGES_REQUESTED" then
+        has_changes_requested = true
+      end
+
+      -- check CI status from last commit
+      local has_checks_failing = false
+      local commits_conn = pr.commits as {string: any}
+      if commits_conn then
+        local commit_nodes = commits_conn.nodes as {any} or {}
+        if #commit_nodes > 0 then
+          local last_commit_node = commit_nodes[#commit_nodes] as {string: any}
+          local commit_obj = last_commit_node.commit as {string: any}
+          if commit_obj then
+            local rollup = commit_obj.statusCheckRollup as {string: any}
+            if rollup then
+              local state = rollup.state as string
+              if state == "FAILURE" or state == "ERROR" then
+                has_checks_failing = true
+              end
+            end
+          end
+        end
+      end
+
+      if (has_changes_requested or has_checks_failing) and not has_needs_review then
+        -- build reason string
+        local reasons: {string} = {}
+        if has_changes_requested then
+          reasons[#reasons + 1] = "changes_requested"
+        end
+        if has_checks_failing then
+          reasons[#reasons + 1] = "checks_failing"
+        end
+        local reason = table.concat(reasons, ",")
+
         -- reshape reviews
         local reviews_conn = pr.reviews as {string: any}
         local review_nodes = reviews_conn and reviews_conn.nodes as {any} or {}
@@ -165,6 +211,7 @@ return {
           headRefName = pr.headRefName,
           reviewDecision = pr.reviewDecision,
           updatedAt = pr.updatedAt,
+          reason = reason,
           reviews = reviews,
           comments = comments,
         }

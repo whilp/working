@@ -21,10 +21,13 @@ conventions, and build instructions for the target repository. Follow its guidan
 
 ### For PRs (type = "pr")
 
-1. Read the review comments in the `reviews` and `comments` fields.
-2. Read relevant files referenced in the feedback.
-3. Identify what changes are requested by each reviewer comment.
-4. Write a plan that addresses each piece of feedback.
+1. Check the `reason` field to understand why this PR needs attention:
+   - `changes_requested`: reviewers requested changes. Read the `reviews` and `comments` fields.
+   - `checks_failing`: CI checks are failing. Run the repo's CI/test commands to reproduce failures.
+   - `changes_requested,checks_failing`: both. Address review feedback and fix CI failures.
+2. Read relevant files referenced in the feedback or failing tests.
+3. Identify what changes are needed.
+4. Write a plan that addresses each piece of feedback and/or fixes each CI failure.
 
 ### For Issues (type = "issue")
 
