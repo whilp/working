@@ -39,6 +39,15 @@ $(ah_raw): deps/ah.mk
 	@echo "$(ah_sha)  $@" | sha256sum -c - >/dev/null
 	@chmod +x $@
 
+embed/env.d/20-claude:
+ifdef CI
+	@touch $@
+else ifdef CLAUDE_CODE_OAUTH_TOKEN
+	@echo "CLAUDE_CODE_OAUTH_TOKEN=$(CLAUDE_CODE_OAUTH_TOKEN)" > $@
+else
+	@echo "error: $@ not found — create it with your env vars" >&2; exit 1
+endif
+
 $(ah): $(ah_raw) embed/env.d/20-claude
 	@echo "==> embedding env.d into ah"
 	@$(ah_raw) -o $@ embed embed
