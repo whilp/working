@@ -29,14 +29,19 @@ $(cosmic): deps/cosmic.mk
 	@chmod +x $@
 
 ah := $(o)/bin/ah
+ah_raw := $(o)/bin/.ah-raw
 
-$(ah): deps/ah.mk
+$(ah_raw): deps/ah.mk
 	@rm -f $@
 	@mkdir -p $(@D)
 	@echo "==> fetching $(ah_url)"
 	@curl -fsSL -o $@ $(ah_url)
 	@echo "$(ah_sha)  $@" | sha256sum -c - >/dev/null
 	@chmod +x $@
+
+$(ah): $(ah_raw) embed/env.d/20-claude
+	@echo "==> embedding env.d into ah"
+	@$(ah_raw) -o $@ embed embed
 
 .PHONY: ah cosmic
 ah: $(ah)

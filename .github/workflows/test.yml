@@ -12,5 +12,8 @@ jobs:
     steps:
       - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
 
+      - name: Create embed env.d placeholder
+        run: touch embed/env.d/20-claude
+
       - name: Run type checks and format checks
         run: make -j ci

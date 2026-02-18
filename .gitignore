@@ -2,3 +2,5 @@ o/
 .ah/
 .ape-*
 core
+embed/env.d/*
+!embed/env.d/.gitkeep
