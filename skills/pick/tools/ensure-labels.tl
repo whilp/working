@@ -19,7 +19,7 @@ local repo = os.getenv("WORK_REPO") or ""
 
 return {
   name = "ensure_labels",
-  description = "Ensure required labels exist on the target repository (set by WORK_REPO). Defaults to work labels (todo, doing, done, failed) if no labels specified.",
+  description = "Ensure required labels exist on the target repository (set by WORK_REPO). Defaults to work labels (todo, doing, done, failed, needs-review) if no labels specified.",
   input_schema = {
     type = "object",
     properties = {
@@ -32,7 +32,7 @@ return {
     end
 
     local custom = input.labels as {string}
-    local labels: {string} = (custom and #custom > 0) and custom or {"todo", "doing", "done", "failed"}
+    local labels: {string} = (custom and #custom > 0) and custom or {"todo", "doing", "done", "failed", "needs-review"}
     local errors: {string} = {}
     for _, label in ipairs(labels) do
       local ok, out = run({"gh", "label", "create", label, "--repo", repo, "--force"})

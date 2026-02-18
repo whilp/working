@@ -12,7 +12,7 @@ each phase is a make target with file-based dependencies. outputs go to `o/`.
 
 ## phases
 
-**pick** — selects the next work item. first checks for open PRs with `CHANGES_REQUESTED` review status. if found, picks the oldest one. otherwise, selects one open `todo`-labeled issue. ensures labels exist, checks PR limits, picks by priority/age/clarity. transitions issues to `doing`. writes `o/pick/issue.json` with a `type` field (`"pr"` or `"issue"`).
+**pick** — selects the next work item. first checks for open PRs with `CHANGES_REQUESTED` review status (excluding PRs labeled `needs-review`, which are waiting for the reviewer). if found, picks the oldest one. otherwise, selects one open `todo`-labeled issue. ensures labels exist, checks PR limits, picks by priority/age/clarity. transitions issues to `doing`. writes `o/pick/issue.json` with a `type` field (`"pr"` or `"issue"`).
 
 **clone** — clones (or fetches) the target repo into `o/repo/`. for PRs, checks out the existing branch. for issues, creates a fresh feature branch from the default branch.
 
@@ -24,7 +24,7 @@ each phase is a make target with file-based dependencies. outputs go to `o/`.
 
 **check** — reviews the diff against the plan. for PRs, verifies each piece of feedback was addressed. writes verdict (`pass`, `needs-fixes`, `fail`) and actions to `o/check/actions.json`.
 
-**act** — executes actions: comments on the issue/PR, creates a PR (on pass, for issues only), transitions labels to `done` or `failed` (for issues only). writes `o/act.json`.
+**act** — executes actions: comments on the issue/PR, creates a PR (on pass, for issues only), transitions labels to `done` or `failed` (for issues) or `needs-review` (for PRs). writes `o/act.json`.
 
 ## convergence
 
@@ -42,10 +42,10 @@ each phase runs `ah` (the agent harness) with:
 ## tools
 
 **pick tools** (`skills/pick/tools/`):
-- `get-prs-with-feedback.tl` — list open PRs with `CHANGES_REQUESTED` review status and their review comments via `gh pr list` and `gh pr view`
+- `get-prs-with-feedback.tl` — list open PRs with `CHANGES_REQUESTED` review status (excluding `needs-review` labeled PRs) and their review comments via GraphQL
 - `list-issues.tl` — fetch open `todo` issues via `gh issue list`
 - `count-open-prs.tl` — count open PRs via `gh pr list`
-- `ensure-labels.tl` — create `todo`/`doing`/`done`/`failed` labels via `gh label create`
+- `ensure-labels.tl` — create `todo`/`doing`/`done`/`failed`/`needs-review` labels via `gh label create`
 - `set-issue-labels.tl` — add/remove labels via `gh issue edit`
 
 **act tools** (`skills/act/tools/`):
