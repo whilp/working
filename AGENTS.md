@@ -92,6 +92,8 @@ skills/               agent skills and their tools
   triage/             review open issues, close stale ones, split oversized ones
     SKILL.md          triage skill prompt
     tools/            tl tool modules (close-issue, create-issue, grep-repo)
+  tests/              audit and improve tests
+    SKILL.md          tests skill prompt
 .github/workflows/
   test.yml            CI: runs `make -j ci` on push/PR
   work.yml            scheduled work loop: runs `make work` hourly
