@@ -1,8 +1,9 @@
 -- skills/pick/tools/get-prs-with-feedback.tl: list open PRs with review feedback
 --
--- returns PRs where reviewDecision is CHANGES_REQUESTED, including their
--- review comments and details. uses graphql with explicit owner/name to
--- avoid gh CLI local repo context issues.
+-- returns PRs where reviewDecision is CHANGES_REQUESTED and not labeled
+-- needs-review. PRs with needs-review were already addressed and are waiting
+-- for the reviewer. uses graphql with explicit owner/name to avoid gh CLI
+-- local repo context issues.
 -- reads WORK_REPO from environment to limit scope.
 -- module tool: returns a Tool record for ah to load via -t
 
@@ -31,6 +32,11 @@ query($owner: String!, $name: String!) {
         reviewDecision
         updatedAt
         body
+        labels(first: 20) {
+          nodes {
+            name
+          }
+        }
         reviews(last: 20) {
           nodes {
             author { login }
@@ -59,7 +65,7 @@ end
 
 return {
   name = "get_prs_with_feedback",
-  description = "List open pull requests that have CHANGES_REQUESTED review status, including their review comments. Returns a JSON array of PRs with feedback details. Operates on the repo set by WORK_REPO environment variable.",
+  description = "List open pull requests that have CHANGES_REQUESTED review status and are not labeled needs-review. Returns a JSON array of PRs with feedback details. PRs labeled needs-review were already addressed and are waiting for the reviewer. Operates on the repo set by WORK_REPO environment variable.",
   input_schema = {
     type = "object",
     properties = {},
@@ -107,7 +113,21 @@ return {
     local filtered: {any} = {}
     for _, node_any in ipairs(nodes) do
       local pr = node_any as {string: any}
-      if pr.reviewDecision == "CHANGES_REQUESTED" then
+      -- skip PRs labeled needs-review (already addressed, waiting for reviewer)
+      local has_needs_review = false
+      local labels_conn = pr.labels as {string: any}
+      if labels_conn then
+        local label_nodes = labels_conn.nodes as {any} or {}
+        for _, l_any in ipairs(label_nodes) do
+          local l = l_any as {string: any}
+          if l.name == "needs-review" then
+            has_needs_review = true
+            break
+          end
+        end
+      end
+
+      if pr.reviewDecision == "CHANGES_REQUESTED" and not has_needs_review then
         -- reshape reviews
         local reviews_conn = pr.reviews as {string: any}
         local review_nodes = reviews_conn and reviews_conn.nodes as {any} or {}

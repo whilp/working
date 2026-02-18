@@ -25,7 +25,7 @@ You are executing the actions produced by the check phase of a work pipeline.
    - If `type` is `"issue"`:
      - If verdict is "pass" AND all actions succeeded: run `set_issue_labels` with `issue_number`, remove `doing`, add `done`.
      - Otherwise: run `set_issue_labels` with `issue_number`, remove `doing`, add `failed`.
-   - If `type` is `"pr"`: do not transition labels (PR feedback was addressed, reviewer will re-review).
+   - If `type` is `"pr"`: run `set_issue_labels` with `issue_number` (the PR number), add `needs-review`. This prevents the pick phase from re-selecting this PR until the reviewer acts.
 
 ## Output
 
@@ -37,6 +37,6 @@ Write `o/act.json`:
   "verdict": "<pass|needs-fixes|fail>",
   "actions_executed": <count>,
   "actions_failed": <count>,
-  "label": "<done|failed|none>"
+  "label": "<done|failed|needs-review>"
 }
 ```
