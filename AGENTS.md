@@ -5,11 +5,13 @@ automated work loop for github repositories. picks issues, plans, executes, revi
 ## build
 
 ```bash
-make ci          # type checks + format checks + tests
-make test        # tests only
-make check-types # type checks only
+make ci           # type checks + format checks + length checks + tests
+make test         # tests only
+make check-types  # type checks only
 make check-format # format checks only
-make clean       # remove build artifacts
+make check-length # file length ratchet check
+make ratchet      # regenerate .ratchet from current file lengths
+make clean        # remove build artifacts
 ```
 
 run a single test:

@@ -32,7 +32,15 @@ both are pinned by URL and sha256 in `deps/*.mk` files, included by the Makefile
 
 ## ci
 
-`make ci` runs three checks in the github actions workflow:
+`make ci` runs four checks in the github actions workflow:
 1. `check-types` — teal type checking on all non-test .tl files
 2. `check-format` — formatting check on all non-test .tl files
-3. `test` — runs all test_*.tl files via `cosmic --test`, reports via `cosmic --report`
+3. `check-length` — file length ratchet, fails if any .tl file exceeds its baseline in `.ratchet`
+4. `test` — runs all test_*.tl files via `cosmic --test`, reports via `cosmic --report`
+
+## file length ratchet
+
+`.ratchet` records `path max_lines` for each .tl file. `check-length` fails CI if any file exceeds its baseline. this prevents files from growing unbounded.
+
+- `make check-length` — run the ratchet check
+- `make ratchet` — regenerate `.ratchet` from current file lengths (run after shrinking files)
