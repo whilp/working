@@ -41,7 +41,12 @@ Read `o/plan/plan.md` for the plan. Read `o/do/do.md` for the execution summary.
       MUST be `needs-fixes`. List each out-of-scope file and require it to be
       removed or justified.
 4. For PRs: verify each piece of review feedback was addressed and/or CI checks now pass (based on `reason` field).
-5. Write your assessment.
+5. Check for security issues and code smells:
+   - Hardcoded secrets or credentials
+   - Injection vulnerabilities (SQL, command, path traversal)
+   - Unsafe error handling (swallowed errors, missing validation)
+   - Obvious code smells (dead code, duplicated logic, magic numbers)
+6. Write your assessment.
 
 ## Output
 
@@ -60,6 +65,9 @@ Write `o/check/check.md`:
 
     ## Validation
     <results of running validation steps>
+
+    ## Security & Quality
+    <security issues or code smells found, or "none">
 
     ## Issues
 
