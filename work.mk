@@ -198,7 +198,15 @@ $(act_done): $(check_done) $(issue) $(ah) $(cosmic)
 
 .PHONY: work
 converge := $(MAKE) "REPO=$(REPO)" $(act_done)
-work:
+work: $(issue)
+	@error=$$(jq -r '.error // empty' $(issue)); \
+	if [ "$$error" = "pr_limit" ] || [ "$$error" = "no_issues" ]; then \
+		echo "==> skip: $$error"; \
+		exit 0; \
+	elif [ -n "$$error" ]; then \
+		echo "==> error: $$error"; \
+		exit 1; \
+	fi
 	-@LOOP=1 $(converge)
 	-@LOOP=2 $(converge)
 	@LOOP=3 $(converge)
