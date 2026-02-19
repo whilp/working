@@ -37,4 +37,79 @@ local function test_missing_issue_number()
 end
 test_missing_issue_number()
 
+-- parse_issue_number tests via exposed _parse_issue_number
+local parse = tool._parse_issue_number as function(any, string): number, string
+
+local function test_parse_bare_number()
+  local n, err = parse(42, "whilp/working")
+  assert(n == 42, "should return 42: " .. tostring(n))
+  assert(not err, "should have no error: " .. tostring(err))
+  print("✓ parse_issue_number handles bare number")
+end
+test_parse_bare_number()
+
+local function test_parse_float_number()
+  local n, err = parse(37.9, "whilp/working")
+  assert(n == 37, "should floor to 37: " .. tostring(n))
+  assert(not err, "should have no error: " .. tostring(err))
+  print("✓ parse_issue_number floors float numbers")
+end
+test_parse_float_number()
+
+local function test_parse_bare_string()
+  local n, err = parse("37", "whilp/working")
+  assert(n == 37, "should return 37: " .. tostring(n))
+  assert(not err, "should have no error: " .. tostring(err))
+  print("✓ parse_issue_number handles bare number string")
+end
+test_parse_bare_string()
+
+local function test_parse_hash_format()
+  local n, err = parse("#37", "whilp/working")
+  assert(n == 37, "should return 37: " .. tostring(n))
+  assert(not err, "should have no error: " .. tostring(err))
+  print("✓ parse_issue_number handles #N format")
+end
+test_parse_hash_format()
+
+local function test_parse_owner_repo_format()
+  local n, err = parse("whilp/working#37", "whilp/working")
+  assert(n == 37, "should return 37: " .. tostring(n))
+  assert(not err, "should have no error: " .. tostring(err))
+  print("✓ parse_issue_number handles owner/repo#N format")
+end
+test_parse_owner_repo_format()
+
+local function test_parse_repo_mismatch()
+  local n, err = parse("other/repo#37", "whilp/working")
+  assert(not n, "should return nil for mismatched repo")
+  assert(err and err:find("repo mismatch"), "should have repo mismatch error: " .. tostring(err))
+  print("✓ parse_issue_number rejects mismatched repo")
+end
+test_parse_repo_mismatch()
+
+local function test_parse_garbage_string()
+  local n, err = parse("garbage", "whilp/working")
+  assert(not n, "should return nil for garbage")
+  assert(err and err:find("could not parse"), "should have parse error: " .. tostring(err))
+  print("✓ parse_issue_number rejects garbage string")
+end
+test_parse_garbage_string()
+
+local function test_parse_nil_input()
+  local n, err = parse(nil, "whilp/working")
+  assert(not n, "should return nil for nil input")
+  assert(err and err:find("must be a number or string"), "should have type error: " .. tostring(err))
+  print("✓ parse_issue_number rejects nil input")
+end
+test_parse_nil_input()
+
+local function test_parse_boolean_input()
+  local n, err = parse(true, "whilp/working")
+  assert(not n, "should return nil for boolean input")
+  assert(err and err:find("must be a number or string"), "should have type error: " .. tostring(err))
+  print("✓ parse_issue_number rejects boolean input")
+end
+test_parse_boolean_input()
+
 print("\nAll comment_issue tests passed!")
