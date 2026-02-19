@@ -300,11 +300,13 @@ $(docs_done): $(docs_repo_ready) $(ah)
 # --- tests ---
 # standalone target: audit and improve tests.
 # requires REPO and a cloned repo. not part of the main work chain.
+# tests-work chains: clone → branch → tests → push → pr
 
 tests_dir := $(o)/tests
 tests_done := $(tests_dir)/tests.json
+tests_branch = tests/$(subst /,-,$(REPO))-$(shell date +%Y%m%d)
 
-# tests needs the repo cloned and on the default branch.
+# tests needs the repo cloned and on a feature branch.
 tests_repo_ready := $(tests_dir)/.repo-ready
 
 $(tests_repo_ready):
@@ -316,6 +318,8 @@ $(tests_repo_ready):
 	@git -C $(repo_dir) fetch origin
 	@git -C $(repo_dir) checkout $(default_branch:origin/%=%)
 	@git -C $(repo_dir) pull origin $(default_branch:origin/%=%)
+	@echo "==> create tests branch $(tests_branch)"
+	@git -C $(repo_dir) checkout -B $(tests_branch)
 	@mkdir -p $(tests_dir)
 	@touch $@
 
@@ -336,3 +340,40 @@ $(tests_done): $(tests_repo_ready) $(ah)
 		--unveil $(tests_dir):rwc \
 		--unveil .:r \
 		<<< ""
+
+# --- tests-push ---
+
+tests_push_done := $(tests_dir)/.push-done
+
+$(tests_push_done): $(tests_done)
+	@if git -C $(repo_dir) diff --quiet $(default_branch)..HEAD 2>/dev/null; then \
+		echo "==> tests: no changes to push"; \
+	else \
+		echo "==> tests: push"; \
+		test -n "$(GH_TOKEN)" || { echo "error: GH_TOKEN not set"; exit 1; }; \
+		git -C $(repo_dir) remote set-url origin https://x-access-token:$(GH_TOKEN)@github.com/$(REPO).git; \
+		git -C $(repo_dir) push -u origin HEAD; \
+	fi
+	@touch $@
+
+# --- tests-pr ---
+
+tests_pr_done := $(tests_dir)/.pr-done
+
+$(tests_pr_done): $(tests_push_done)
+	@if git -C $(repo_dir) diff --quiet $(default_branch)..HEAD 2>/dev/null; then \
+		echo "==> tests: no PR needed"; \
+	else \
+		echo "==> tests: create PR"; \
+		cd $(repo_dir) && gh pr create \
+			--title "tests: improve test coverage" \
+			--body "automated test improvements from the tests skill." \
+			--label todo \
+		|| echo "==> tests: PR already exists or creation failed"; \
+	fi
+	@touch $@
+
+# --- tests-work ---
+
+.PHONY: tests-work
+tests-work: $(tests_pr_done)
