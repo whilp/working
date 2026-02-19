@@ -77,12 +77,20 @@ outputs to `o/triage/triage.json`.
 
 ## tests
 
-the tests skill audits and improves tests for a target repo. it runs standalone via `REPO=owner/repo make tests`, separate from the main work loop.
+the tests skill audits and improves tests for a target repo. it runs as a scheduled workflow via `.github/workflows/tests.yml` (daily at 08:00 UTC), or standalone via `REPO=owner/repo make tests-work`.
+
+the full chain is: clone → branch → tests → push → pr.
+
+`tests-work` creates a feature branch (`tests/<repo>-<date>`), runs the tests skill, pushes the branch if there are changes, and opens a PR. if the skill finds nothing to fix, no push or PR is created.
 
 the skill reads `AGENTS.md` to discover the repo's test conventions, then reads through the codebase and tests to find gaps and quality issues. it fixes the most impactful problems — missing tests first, then weak assertions, then broken tests.
 
 adapts to whatever testing patterns the repo uses. no fixed rubric.
 
 runs in a sandbox with read/write access to the repo. no custom tool modules.
+
+individual targets:
+- `make tests` — run the tests skill only (no push/PR)
+- `make tests-work` — full chain: clone → branch → tests → push → pr
 
 outputs to `o/tests/tests.json`.
