@@ -207,6 +207,7 @@ work: $(issue)
 		echo "==> error: $$error"; \
 		exit 1; \
 	fi
+	@$(MAKE) "REPO=$(REPO)" $(plan)
 	-@LOOP=1 $(converge)
 	-@LOOP=2 $(converge)
 	@LOOP=3 $(converge)

@@ -47,4 +47,21 @@ local function test_parse_repo()
 end
 test_parse_repo()
 
+local function test_invalid_repo_format()
+  -- set WORK_REPO to an invalid format to test validation
+  local orig = os.getenv("WORK_REPO")
+  -- can't unset env in lua, but we already tested empty above
+  -- test with a bad format via the exported parse function
+  local parse = (tool as {string: any})._parse_repo as function(string): string, string
+  local o1, n1 = parse("just-owner")
+  assert(o1 == nil, "should reject owner without name")
+  assert(n1 == nil, "should reject owner without name")
+  print("✓ parse_repo rejects owner without name")
+
+  local o2, n2 = parse("/name")
+  assert(o2 == nil or o2 == "", "should reject missing owner: " .. tostring(o2))
+  print("✓ parse_repo rejects missing owner")
+end
+test_invalid_repo_format()
+
 print("\nAll get_prs_with_feedback tests passed!")
