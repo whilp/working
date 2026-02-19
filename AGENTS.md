@@ -43,7 +43,7 @@ make publish
 DATE=2025-01-15 make reflect
 ```
 
-the work workflow runs hourly. the reflect workflow runs daily at 06:00 UTC. both support manual dispatch.
+the work workflow runs hourly. the reflect workflow runs daily at 06:00 UTC. the tests workflow runs daily at 08:00 UTC. all support manual dispatch.
 
 ## setup
 
@@ -98,6 +98,7 @@ skills/               agent skills and their tools
   test.yml            CI: runs `make -j ci` on push/PR
   work.yml            scheduled work loop: runs `make work` hourly
   reflect.yml         daily reflect loop: runs `make reflect`
+  tests.yml           daily tests loop: runs `make tests-work`
 ```
 
 ## docs
