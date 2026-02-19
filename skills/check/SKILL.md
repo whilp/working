@@ -28,7 +28,18 @@ Read `o/plan/plan.md` for the plan. Read `o/do/do.md` for the execution summary.
    git -C o/repo diff origin/main...HEAD
    ```
 2. Run validation steps from the plan.
-3. Check for unintended changes.
+3. Enforce scope limits:
+   a. Extract the planned file list from `o/plan/plan.md`'s `## Files` section.
+   b. List actual changed files:
+      ```bash
+      git -C o/repo diff --name-only origin/main...HEAD
+      ```
+   c. Identify out-of-scope files — files in the diff but NOT in the plan's file list.
+   d. Test files that correspond to a planned source file are acceptable (e.g.
+      `test_foo.tl` for a planned `foo.tl`).
+   e. If any out-of-scope files remain without explicit justification, the verdict
+      MUST be `needs-fixes`. List each out-of-scope file and require it to be
+      removed or justified.
 4. For PRs: verify each piece of review feedback was addressed and/or CI checks now pass (based on `reason` field).
 5. Write your assessment.
 
@@ -40,6 +51,12 @@ Write `o/check/check.md`:
 
     ## Plan compliance
     <did changes match plan?>
+
+    ## Scope
+    - Planned files: <list from plan>
+    - Actual files: <list from diff>
+    - Out-of-scope files: <list, or "none">
+    - Justified: <yes/no for each out-of-scope file, with reason>
 
     ## Validation
     <results of running validation steps>
