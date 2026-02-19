@@ -205,8 +205,37 @@ return {
         end
       end
 
+      -- skip PRs where all new CHANGES_REQUESTED reviews have empty bodies.
+      -- this prevents the no-op cycle: bot comments "pass", reviewer submits
+      -- another empty CHANGES_REQUESTED review, bot picks it up again.
+      local dominated_by_empty_reviews = false
+      if has_changes_requested and not dominated_by_needs_review then
+        local reviews_conn = pr.reviews as {string: any}
+        local review_nodes = reviews_conn and reviews_conn.nodes as {any} or {}
+        local new_cr_count = 0
+        local empty_cr_count = 0
+        for _, r_any in ipairs(review_nodes) do
+          local r = r_any as {string: any}
+          if r.state == "CHANGES_REQUESTED" then
+            local submitted = (r.submittedAt as string) or ""
+            if submitted > last_commit_date then
+              new_cr_count = new_cr_count + 1
+              local body = (r.body as string) or ""
+              -- treat whitespace-only bodies as empty
+              if body:match("^%s*$") then
+                empty_cr_count = empty_cr_count + 1
+              end
+            end
+          end
+        end
+        if new_cr_count > 0 and new_cr_count == empty_cr_count then
+          dominated_by_empty_reviews = true
+        end
+      end
+
       if (has_changes_requested or has_checks_failing)
-      and not dominated_by_needs_review then
+      and not dominated_by_needs_review
+      and not dominated_by_empty_reviews then
         -- build reason string
         local reasons: {string} = {}
         if has_changes_requested then
