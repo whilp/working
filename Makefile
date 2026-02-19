@@ -86,9 +86,24 @@ $(o)/%.tl.fmt: %.tl $(cosmic)
 check-format: $(all_fmt_checks)
 	@$(cosmic) --report $(all_fmt_checks)
 
-# ci: type checks + format checks + tests
+# length checking (file length ratchet)
+all_length_checks := $(patsubst %,$(o)/%.length,$(tl_all))
+
+$(o)/%.tl.length: %.tl .ratchet $(cosmic)
+	@mkdir -p $(@D)
+	-@$(cosmic) --test $@ sh -c 'max=$$(grep "^$< " .ratchet | awk "{print \$$2}"); if [ -z "$$max" ]; then echo "$<: not in .ratchet" >&2; exit 1; fi; actual=$$(wc -l < $<); if [ $$actual -gt $$max ]; then echo "$<: $$actual lines > $$max max" >&2; exit 1; fi'
+
+.PHONY: check-length
+check-length: $(all_length_checks)
+	@$(cosmic) --report $(all_length_checks)
+
+.PHONY: ratchet
+ratchet:
+	@for f in $(tl_all); do echo "$$f $$(wc -l < $$f)"; done | sort > .ratchet
+
+# ci: type checks + format checks + length checks + tests
 .PHONY: ci
-ci: check-types check-format test
+ci: check-types check-format check-length test
 
 # tests
 all_test_results := $(patsubst %.tl,$(o)/%.test,$(tl_tests))
@@ -110,6 +125,8 @@ help:
 	@echo "  test                Run tests"
 	@echo "  check-types         Run teal type checker on all .tl files"
 	@echo "  check-format        Check formatting on all .tl files"
+	@echo "  check-length        Check file lengths against .ratchet baseline"
+	@echo "  ratchet             Regenerate .ratchet with current file lengths"
 	@echo "  work                Run full work loop (pick -> plan -> do -> check -> act)"
 	@echo "  pick                Pick a work item: PR with feedback or issue (REPO=owner/repo)"
 	@echo "  clone               Clone repo and checkout work branch"
