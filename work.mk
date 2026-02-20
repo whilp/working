@@ -393,6 +393,10 @@ $(bump_done): $(bump_repo_ready) $(ah) $(cosmic)
 	@git -C $(repo_dir) checkout -B $(bump_branch)
 	@timeout 120 $(ah) -n \
 		-m sonnet \
+		--sandbox \
+		--unveil $(repo_dir):rwc \
+		--unveil $(bump_dir):rwc \
+		--unveil .:r \
 		--skill bump \
 		--must-produce $(bump_done) \
 		--max-tokens 50000 \
