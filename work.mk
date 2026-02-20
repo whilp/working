@@ -212,11 +212,11 @@ work: $(issue)
 	elif [ -n "$$error" ]; then \
 		echo "==> error: $$error"; \
 		exit 1; \
-	fi
-	@$(MAKE) "REPO=$(REPO)" $(plan)
-	-@LOOP=1 $(converge)
-	-@LOOP=2 $(converge)
-	@LOOP=3 $(converge)
+	fi; \
+	$(MAKE) "REPO=$(REPO)" $(plan) || exit $$?; \
+	LOOP=1 $(converge) || true; \
+	LOOP=2 $(converge) || true; \
+	LOOP=3 $(converge)
 
 # --- triage ---
 # standalone target: review open issues, close stale ones, split oversized ones.
