@@ -25,6 +25,7 @@ default_branch = $(or $(shell git -C $(repo_dir) symbolic-ref refs/remotes/origi
 pick_dir := $(o)/pick
 issue := $(pick_dir)/issue.json
 plan_dir := $(o)/plan
+ci_log := $(plan_dir)/ci-log.txt
 plan := $(plan_dir)/plan.md
 do_dir := $(o)/do
 feedback := $(do_dir)/feedback.md
@@ -98,12 +99,27 @@ $(repo_ready): $(issue)
 .PHONY: clone
 clone: $(repo_ready)
 
+# --- ci-log ---
+
+$(ci_log): $(repo_ready) $(issue) $(cosmic)
+	@mkdir -p $(plan_dir)
+	@if [ "$(item_type)" = "pr" ]; then \
+		echo "==> ci-log"; \
+		sha=$$(cat $(repo_ready)); \
+		$(cosmic) skills/plan/tools/get-ci-log.tl "$$sha" $(ci_log); \
+	else \
+		touch $@; \
+	fi
+
+.PHONY: ci-log
+ci-log: $(ci_log)
+
 # --- plan ---
 
 .PHONY: plan
 plan: $(plan)
 
-$(plan): $(repo_ready) $(issue) $(ah)
+$(plan): $(ci_log) $(repo_ready) $(issue) $(ah)
 	@echo "==> plan"
 	@mkdir -p $(plan_dir)
 	@timeout 180 $(ah) -n \

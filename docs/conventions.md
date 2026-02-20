@@ -115,3 +115,11 @@ end
 ```
 
 gh exit 4 means resource not found or access denied. always check for it before the generic error return so permission problems are distinguishable from other failures in logs and reflections.
+
+## makefiles
+
+keep logic and conditionals out of makefiles. makefiles define targets, dependencies, and invocations. non-trivial logic (API calls, parsing, branching) belongs in teal scripts that the makefile invokes. this keeps behavior testable and readable.
+
+good: `$(cosmic) skills/plan/tools/get-ci-log.tl "$$sha" $(ci_log)`
+
+bad: inline shell with pipes, grep chains, and nested conditionals in a makefile recipe.

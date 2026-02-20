@@ -61,7 +61,14 @@ query($owner: String!, $name: String!) {
             body
             state
             submittedAt
-            comments { totalCount }
+            comments(first: 50) {
+              nodes {
+                path
+                line
+                body
+                createdAt
+              }
+            }
           }
         }
         comments(last: 20) {
@@ -232,12 +239,9 @@ return {
               local body = (r.body as string) or ""
               -- treat whitespace-only bodies as empty, but only if
               -- the review also has no inline comments
-              local comment_count: integer = 0
-              local comments_obj = r.comments as {string: any}
-              if comments_obj then
-                comment_count = math.floor((comments_obj.totalCount as number) or 0) as integer
-              end
-              if body:match("^%s*$") and comment_count == 0 then
+              local comments_conn = r.comments as {string: any}
+              local comment_nodes = comments_conn and comments_conn.nodes as {any} or {}
+              if body:match("^%s*$") and #comment_nodes == 0 then
                 empty_cr_count = empty_cr_count + 1
               end
             end
@@ -271,11 +275,29 @@ return {
         for _, r_any in ipairs(review_nodes) do
           local r = r_any as {string: any}
           local author = r.author as {string: any}
+
+          -- extract inline comments
+          local inline_comments: {any} = {}
+          local comments_conn = r.comments as {string: any}
+          if comments_conn then
+            local comment_nodes = comments_conn.nodes as {any} or {}
+            for _, ic_any in ipairs(comment_nodes) do
+              local ic = ic_any as {string: any}
+              inline_comments[#inline_comments + 1] = {
+                path = ic.path,
+                line = ic.line,
+                body = ic.body,
+                createdAt = ic.createdAt,
+              }
+            end
+          end
+
           reviews[#reviews + 1] = {
             author = author and author.login or nil,
             body = r.body,
             state = r.state,
             submittedAt = r.submittedAt,
+            comments = inline_comments,
           }
         end
 
