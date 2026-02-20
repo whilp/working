@@ -83,6 +83,12 @@ $(repo_ready): $(issue)
 		echo "==> checkout existing PR branch $(branch)"; \
 		git -C $(repo_dir) checkout $(branch); \
 		git -C $(repo_dir) pull origin $(branch); \
+		echo "==> rebase on $(default_branch)"; \
+		git -C $(repo_dir) rebase $(default_branch) || { \
+			echo "==> rebase conflict, aborting and resetting to $(default_branch)"; \
+			git -C $(repo_dir) rebase --abort; \
+			git -C $(repo_dir) reset --hard $(default_branch); \
+		}; \
 	else \
 		echo "==> checkout new branch $(branch)"; \
 		git -C $(repo_dir) checkout -B $(branch) $(default_branch); \

@@ -1,13 +1,15 @@
 -- skills/pick/tools/get-prs-with-feedback.tl: list open PRs needing attention
 --
--- returns PRs that are blocked and need work: either reviewDecision is
--- CHANGES_REQUESTED, or CI checks are failing. for PRs labeled needs-review
--- (already addressed, waiting for reviewer): skips if only checks are failing,
--- and skips if the latest CHANGES_REQUESTED review predates the last commit
--- (we already pushed a fix). includes the PR if the review postdates the last
--- commit (new feedback from reviewer). each returned PR includes a "reason"
--- field: "changes_requested", "checks_failing", or
--- "changes_requested,checks_failing".
+-- returns PRs that are blocked and need work: reviewDecision is
+-- CHANGES_REQUESTED, CI checks are failing, or the PR has merge conflicts.
+-- for PRs labeled needs-review (already addressed, waiting for reviewer):
+-- skips if only checks are failing, and skips if the latest CHANGES_REQUESTED
+-- review predates the last commit (we already pushed a fix). includes the PR
+-- if the review postdates the last commit (new feedback from reviewer).
+-- merge conflicts always surface regardless of needs-review label — they
+-- require a rebase that hasn't happened yet.
+-- each returned PR includes a "reason" field: comma-separated combination of
+-- "changes_requested", "checks_failing", "merge_conflict".
 -- uses graphql with explicit owner/name to avoid gh CLI local repo context
 -- issues. reads WORK_REPO from environment to limit scope.
 -- module tool: returns a Tool record for ah to load via -t
@@ -35,6 +37,7 @@ query($owner: String!, $name: String!) {
         url
         headRefName
         reviewDecision
+        mergeable
         updatedAt
         body
         labels(first: 20) {
@@ -80,7 +83,7 @@ end
 
 return {
   name = "get_prs_with_feedback",
-  description = "List open pull requests that need attention: CHANGES_REQUESTED review status or failing CI checks. For PRs labeled needs-review, compares the latest CHANGES_REQUESTED review timestamp against the last commit — only includes the PR if the review is newer (new feedback from reviewer). Operates on the repo set by WORK_REPO environment variable.",
+  description = "List open pull requests that need attention: CHANGES_REQUESTED review status, failing CI checks, or merge conflicts. For PRs labeled needs-review, compares the latest CHANGES_REQUESTED review timestamp against the last commit — only includes the PR if the review is newer (new feedback from reviewer). Merge conflicts always surface regardless of needs-review label. Operates on the repo set by WORK_REPO environment variable.",
   input_schema = {
     type = "object",
     properties = {},
@@ -150,6 +153,9 @@ return {
         has_changes_requested = true
       end
 
+      -- check merge conflict status
+      local has_merge_conflict = pr.mergeable == "CONFLICTING"
+
       -- check CI status from last commit; also capture committedDate
       local has_checks_failing = false
       local last_commit_date: string = ""
@@ -193,8 +199,10 @@ return {
       -- the latest CHANGES_REQUESTED review against the last commit.
       -- if the review predates the commit, we already addressed it — skip.
       -- if the review postdates the commit, it's new feedback — include.
+      -- merge conflicts are never dominated by needs-review — they require
+      -- a rebase regardless of review state.
       local dominated_by_needs_review = false
-      if has_needs_review then
+      if has_needs_review and not has_merge_conflict then
         if not has_changes_requested then
           -- only signal is checks_failing; skip (transient after our push)
           dominated_by_needs_review = true
@@ -233,7 +241,7 @@ return {
         end
       end
 
-      if (has_changes_requested or has_checks_failing)
+      if (has_changes_requested or has_checks_failing or has_merge_conflict)
       and not dominated_by_needs_review
       and not dominated_by_empty_reviews then
         -- build reason string
@@ -243,6 +251,9 @@ return {
         end
         if has_checks_failing then
           reasons[#reasons + 1] = "checks_failing"
+        end
+        if has_merge_conflict then
+          reasons[#reasons + 1] = "merge_conflict"
         end
         local reason = table.concat(reasons, ",")
 
