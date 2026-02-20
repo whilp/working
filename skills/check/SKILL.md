@@ -24,16 +24,24 @@ Read `o/plan/plan.md` for the plan. Read `o/do/do.md` for the execution summary.
 ## Instructions
 
 1. Review the diff:
-   ```bash
-   git -C o/repo diff origin/main...HEAD
-   ```
+   - For issues: `git -C o/repo diff origin/main...HEAD`
+   - For PRs: review the full branch diff (`git -C o/repo diff origin/main...HEAD`)
+     for context, but note that only new commits (since `o/repo/sha`) are in scope.
 2. Run validation steps from the plan.
 3. Enforce scope limits:
    a. Extract the planned file list from `o/plan/plan.md`'s `## Files` section.
-   b. List actual changed files:
-      ```bash
-      git -C o/repo diff --name-only origin/main...HEAD
-      ```
+   b. List actual changed files. The diff range depends on the item type:
+      - For issues: diff the full branch against the default branch.
+        ```bash
+        git -C o/repo diff --name-only origin/main...HEAD
+        ```
+      - For PRs: diff only the new commits made during this work session.
+        `o/repo/sha` contains the branch HEAD at clone time (before do ran).
+        ```bash
+        git -C o/repo diff --name-only $(cat o/repo/sha)..HEAD
+        ```
+        If no new commits exist (sha equals HEAD), there are no changed files
+        to scope-check.
    c. Identify out-of-scope files — files in the diff but NOT in the plan's file list.
    d. Test files that correspond to a planned source file are acceptable (e.g.
       `test_foo.tl` for a planned `foo.tl`).
