@@ -15,7 +15,7 @@ You are selecting the next work item from a GitHub repository. PRs with review f
 
 1. Run `ensure_labels` (no arguments needed — reads repo from environment).
 2. Run `get_prs_with_feedback` (no arguments needed).
-3. If there are PRs needing attention (changes requested or failing CI checks):
+3. If there are PRs needing attention (changes requested, failing CI checks, or merge conflicts):
    a. Pick the PR with the oldest `updatedAt` (longest waiting for attention).
    b. Write your output with `type` set to `"pr"` and the PR details. Include the `reason` field from the tool result.
    c. Skip the remaining steps.
@@ -44,7 +44,7 @@ For a PR with feedback:
   "body": "...",
   "url": "https://github.com/owner/repo/pull/123",
   "branch": "<headRefName from PR>",
-  "reason": "<changes_requested|checks_failing|changes_requested,checks_failing>",
+  "reason": "<changes_requested|checks_failing|merge_conflict|changes_requested,checks_failing|...>",
   "reviews": [...],
   "comments": [...]
 }

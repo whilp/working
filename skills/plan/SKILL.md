@@ -24,7 +24,8 @@ conventions, and build instructions for the target repository. Follow its guidan
 1. Check the `reason` field to understand why this PR needs attention:
    - `changes_requested`: reviewers requested changes. Read the `reviews` and `comments` fields.
    - `checks_failing`: CI checks are failing. Run the repo's CI/test commands to reproduce failures.
-   - `changes_requested,checks_failing`: both. Address review feedback and fix CI failures.
+   - `merge_conflict`: the PR branch has merge conflicts with the base branch. The clone phase rebases automatically — verify the rebase succeeded and re-run CI.
+   - Reasons can be comma-separated (e.g. `changes_requested,merge_conflict`). Address all.
 2. Read relevant files referenced in the feedback or failing tests.
 3. Identify what changes are needed.
 4. Write a plan that addresses each piece of feedback and/or fixes each CI failure.
