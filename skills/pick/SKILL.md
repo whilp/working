@@ -45,10 +45,27 @@ For a PR with feedback:
   "url": "https://github.com/owner/repo/pull/123",
   "branch": "<headRefName from PR>",
   "reason": "<changes_requested|checks_failing|merge_conflict|changes_requested,checks_failing|...>",
-  "reviews": [...],
+  "reviews": [
+    {
+      "author": "username",
+      "body": "review body text",
+      "state": "CHANGES_REQUESTED",
+      "submittedAt": "2026-01-01T00:00:00Z",
+      "comments": [
+        {
+          "path": "file.tl",
+          "line": 42,
+          "body": "inline comment text",
+          "createdAt": "2026-01-01T00:00:00Z"
+        }
+      ]
+    }
+  ],
   "comments": [...]
 }
 ```
+
+Copy the `reviews` array exactly as returned by `get_prs_with_feedback`, including each review's nested `comments` array (inline review comments). These inline comments contain file-specific feedback that downstream phases need to address.
 
 For an issue:
 
