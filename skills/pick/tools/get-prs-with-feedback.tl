@@ -58,6 +58,7 @@ query($owner: String!, $name: String!) {
             body
             state
             submittedAt
+            comments { totalCount }
           }
         }
         comments(last: 20) {
@@ -221,8 +222,14 @@ return {
             if submitted > last_commit_date then
               new_cr_count = new_cr_count + 1
               local body = (r.body as string) or ""
-              -- treat whitespace-only bodies as empty
-              if body:match("^%s*$") then
+              -- treat whitespace-only bodies as empty, but only if
+              -- the review also has no inline comments
+              local comment_count: integer = 0
+              local comments_obj = r.comments as {string: any}
+              if comments_obj then
+                comment_count = math.floor((comments_obj.totalCount as number) or 0) as integer
+              end
+              if body:match("^%s*$") and comment_count == 0 then
                 empty_cr_count = empty_cr_count + 1
               end
             end
