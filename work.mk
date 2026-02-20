@@ -394,13 +394,13 @@ $(bump_done): $(bump_repo_ready) $(ah) $(cosmic)
 	@timeout 120 $(ah) -n \
 		-m sonnet \
 		--sandbox \
-		--unveil $(repo_dir):rwc \
-		--unveil $(bump_dir):rwc \
-		--unveil .:r \
 		--skill bump \
 		--must-produce $(bump_done) \
 		--max-tokens 50000 \
 		--db $(bump_dir)/session.db \
+		--unveil $(repo_dir):rwc \
+		--unveil $(bump_dir):rwc \
+		--unveil .:r \
 		--tool "get_latest_release=skills/bump/tools/get-latest-release.tl" \
 		--tool "update_dep=skills/bump/tools/update-dep.tl" \
 		--tool "bash=" \
