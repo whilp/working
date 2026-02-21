@@ -57,8 +57,8 @@ ah: $(ah)
 cosmic: $(cosmic)
 
 # sources
-tl_all := $(wildcard skills/*/tools/*.tl) $(wildcard skills/*/lib/*.tl)
-tl_tests := $(wildcard skills/*/tools/test_*.tl) $(wildcard skills/*/lib/test_*.tl)
+tl_all := $(wildcard skills/*/tools/*.tl) $(wildcard skills/*/lib/*.tl) $(wildcard lib/*/*.tl)
+tl_tests := $(wildcard skills/*/tools/test_*.tl) $(wildcard skills/*/lib/test_*.tl) $(wildcard lib/*/test_*.tl)
 tl_srcs := $(filter-out $(tl_tests),$(tl_all))
 
 TL_PATH := /zip/.lua/?.tl;/zip/.lua/?/init.tl;/zip/.lua/types/?.d.tl;/zip/.lua/types/?/init.d.tl
@@ -87,19 +87,15 @@ check-format: $(all_fmt_checks)
 	@$(cosmic) --report $(all_fmt_checks)
 
 # length checking (file length ratchet)
-all_length_checks := $(patsubst %,$(o)/%.length,$(tl_all))
+all_length_checks := $(o)/lint.result
 
-$(o)/%.tl.length: %.tl .ratchet $(cosmic)
+$(o)/lint.result: $(wildcard $(shell git ls-files)) lib/build/lint.tl $(cosmic)
 	@mkdir -p $(@D)
-	-@$(cosmic) --test $@ sh -c 'max=$$(grep "^$< " .ratchet | awk "{print \$$2}"); if [ -z "$$max" ]; then echo "$<: not in .ratchet" >&2; exit 1; fi; actual=$$(wc -l < $<); if [ $$actual -gt $$max ]; then echo "$<: $$actual lines > $$max max" >&2; exit 1; fi'
+	-@$(cosmic) --test $@ $(cosmic) lib/build/lint.tl "$$(git ls-files | tr '\n' ' ')"
 
 .PHONY: check-length
 check-length: $(all_length_checks)
 	@$(cosmic) --report $(all_length_checks)
-
-.PHONY: ratchet
-ratchet:
-	@for f in $(tl_all); do echo "$$f $$(wc -l < $$f)"; done | sort > .ratchet
 
 # ci: type checks + format checks + length checks + tests
 .PHONY: ci

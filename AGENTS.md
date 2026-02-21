@@ -9,8 +9,7 @@ make ci           # type checks + format checks + length checks + tests
 make test         # tests only
 make check-types  # type checks only
 make check-format # format checks only
-make check-length # file length ratchet check
-make ratchet      # regenerate .ratchet from current file lengths
+make check-length # file length lint check (500-line default)
 make clean        # remove build artifacts
 ```
 
