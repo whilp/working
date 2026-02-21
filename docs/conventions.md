@@ -51,7 +51,7 @@ key patterns:
 
 ## testing
 
-every tool .tl file has a corresponding `test_*.tl`. shared tool tests live in `test/tools/`. skill tool tests live in the skill's `tools/` directory.
+every tool .tl file has a corresponding `test_*.tl`. shared tool tests live in `test/tools/`. skill tool tests live in `skills/NAME/tests/`.
 
 tests validate:
 - **tool record structure** — name, description, input_schema shape, execute function present.

@@ -58,7 +58,7 @@ cosmic: $(cosmic)
 
 # sources
 tl_all := $(wildcard tools/*.tl) $(wildcard skills/*/tools/*.tl) $(wildcard skills/*/lib/*.tl) $(wildcard lib/*/*.tl)
-tl_tests := $(wildcard test/tools/test_*.tl) $(wildcard skills/*/tools/test_*.tl) $(wildcard skills/*/lib/test_*.tl) $(wildcard lib/*/test_*.tl)
+tl_tests := $(wildcard test/tools/test_*.tl) $(wildcard skills/*/tests/test_*.tl) $(wildcard lib/*/test_*.tl)
 tl_srcs := $(filter-out $(tl_tests),$(tl_all))
 
 TL_PATH := /zip/.lua/?.tl;/zip/.lua/?/init.tl;/zip/.lua/types/?.d.tl;/zip/.lua/types/?/init.d.tl

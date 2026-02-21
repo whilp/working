@@ -87,8 +87,10 @@ skills/               agent skills and their tools
   pick/               select next issue from github
     SKILL.md          pick skill prompt
     tools/            tl tool modules (list-issues, count-open-prs, ensure-labels, get-prs-with-feedback)
+    tests/            tests for pick tools
   plan/               research codebase and write a plan
     SKILL.md          plan skill prompt
+    tests/            tests for plan lib modules
   do/                 execute the plan
     SKILL.md          do skill prompt
   check/              review execution against plan
@@ -96,14 +98,17 @@ skills/               agent skills and their tools
   reflect/            retrospective analysis of workflow runs
     SKILL.md          reflect skill prompt (fetch, analyze-run, summarize phases)
     tools/            tl tool modules (get-workflow-runs)
+    tests/            tests for reflect tools
   triage/             review open issues, close stale ones, split oversized ones
     SKILL.md          triage skill prompt
     tools/            tl tool modules (close-issue, create-issue, grep-repo)
+    tests/            tests for triage tools
   tests/              audit and improve tests
     SKILL.md          tests skill prompt
   bump/               check for dependency updates
     SKILL.md          bump skill prompt
     tools/            tl tool modules (get-latest-release, update-dep)
+    tests/            tests for bump tools
 .github/workflows/
   test.yml            CI: runs `make -j ci` on push/PR
   work.yml            scheduled work loop: runs `make work` hourly
