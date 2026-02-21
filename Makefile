@@ -87,11 +87,12 @@ check-format: $(all_fmt_checks)
 	@$(cosmic) --report $(all_fmt_checks)
 
 # length checking (file length ratchet)
-all_length_checks := $(o)/lint.result
+all_files := $(shell git ls-files)
+all_length_checks := $(patsubst %,$(o)/%.lint,$(all_files))
 
-$(o)/lint.result: $(wildcard $(shell git ls-files)) lib/build/lint.tl $(cosmic)
+$(o)/%.lint: % lib/build/lint.tl $(cosmic)
 	@mkdir -p $(@D)
-	-@$(cosmic) --test $@ $(cosmic) lib/build/lint.tl "$$(git ls-files | tr '\n' ' ')"
+	-@$(cosmic) --test $@ $(cosmic) lib/build/lint.tl $<
 
 .PHONY: check-length
 check-length: $(all_length_checks)

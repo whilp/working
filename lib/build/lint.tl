@@ -78,18 +78,13 @@ local function lint_files(files: {string}): {Diagnostic}, integer
 end
 
 local function main(args: {string}): integer
-  -- args[1] contains space-separated list of files
+  -- args[1] contains a single file path
   if #args < 1 or args[1] == "" then
-    io.stderr:write("usage: cosmic lib/build/lint.tl '<file1> <file2> ...'\n")
+    io.stderr:write("usage: cosmic lib/build/lint.tl '<file>'\n")
     return 1
   end
 
-  -- split space-separated file list
-  local files: {string} = {}
-  for file in args[1]:gmatch("%S+") do
-    files[#files + 1] = file
-  end
-
+  local files: {string} = {args[1]}
   local diagnostics, checked = lint_files(files)
 
   if #diagnostics == 0 then
