@@ -46,9 +46,8 @@ each phase runs `ah` (the agent harness) with:
 - `list-issues.tl` — fetch open `todo` issues via `gh issue list`
 - `count-open-prs.tl` — count open PRs via `gh pr list`
 - `ensure-labels.tl` — create `todo`/`doing`/`done`/`failed`/`needs-review` labels via `gh label create`
-- `set-issue-labels.tl` — add/remove labels via `gh issue edit`
 
-**act tools** (`skills/act/tools/`):
+**shared tools** (`tools/`):
 - `comment-issue.tl` — post a comment via `gh issue comment`
 - `create-pr.tl` — create a PR via `gh pr create`
 - `set-issue-labels.tl` — add/remove labels via `gh issue edit`
@@ -58,7 +57,7 @@ each phase runs `ah` (the agent harness) with:
 - `create-issue.tl` — create a new issue via `gh issue create`
 - `grep-repo.tl` — search the target repo for patterns via grep
 
-triage also reuses `list-issues` from pick and `comment-issue`/`set-issue-labels` from act.
+triage also reuses `list-issues` from pick and `comment-issue`/`set-issue-labels` from `tools/`.
 
 ## triage
 

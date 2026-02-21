@@ -1,7 +1,7 @@
 #!/usr/bin/env cosmic
 -- test_create_pr.tl: tests for create-pr tool
 
-local tool = require("skills.act.tools.create-pr")
+local tool = require("tools.create-pr")
 
 local function test_tool_record()
   assert(tool.name == "create_pr", "name should be create_pr: " .. tostring(tool.name))

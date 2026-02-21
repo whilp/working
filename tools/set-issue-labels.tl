@@ -1,4 +1,4 @@
--- skills/act/tools/set-issue-labels.tl: add/remove labels on an issue
+-- tools/set-issue-labels.tl: add/remove labels on an issue
 --
 -- reads WORK_REPO from environment to limit scope.
 -- takes issue number instead of URL.
@@ -61,6 +61,9 @@ return {
 
     local ok, out, code = run(argv)
     if not ok then
+      if code == 4 then
+        return "error: gh access denied (exit 4): " .. (out or "")
+      end
       return "error: gh failed (exit " .. tostring(code) .. "): " .. (out or "")
     end
     return "ok"

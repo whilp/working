@@ -1,4 +1,4 @@
--- skills/act/tools/comment-issue.tl: comment on a GitHub issue
+-- tools/comment-issue.tl: comment on a GitHub issue
 --
 -- reads WORK_REPO from environment to limit scope.
 -- takes issue number instead of URL.

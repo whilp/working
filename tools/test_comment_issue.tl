@@ -1,7 +1,7 @@
 #!/usr/bin/env cosmic
 -- test_comment_issue.tl: tests for comment-issue tool
 
-local tool = require("skills.act.tools.comment-issue")
+local tool = require("tools.comment-issue")
 
 local function test_tool_record()
   assert(tool.name == "comment_issue", "name should be comment_issue: " .. tostring(tool.name))
