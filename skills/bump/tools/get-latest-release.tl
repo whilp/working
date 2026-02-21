@@ -27,6 +27,11 @@ return {
     required = {"repo", "asset_name"},
   },
   execute = function(input: {string: any}): string
+    local token = os.getenv("GH_TOKEN")
+    if not token or token == "" then
+      return "error: GH_TOKEN environment variable not set"
+    end
+
     local repo = input.repo as string
     if not repo or repo == "" then
       return "error: repo required"
@@ -40,7 +45,8 @@ return {
     local argv: {string} = {
       "gh", "api",
       "repos/" .. repo .. "/releases/latest",
-      "--jq", '.tag_name as $tag | .assets[] | select(.name == "' .. asset_name .. '") | $tag + " " + .browser_download_url',
+      "--jq", '.tag_name as $tag | .assets[] | select(.name == $asset) | $tag + " " + .browser_download_url',
+      "--arg", "asset", asset_name,
     }
 
     local ok, out, code = run(argv)

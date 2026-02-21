@@ -5,6 +5,7 @@
 
 local child = require("cosmic.child")
 local cio = require("cosmic.io")
+local fetch = require("cosmic.fetch")
 
 local function run(argv: {string}): boolean | string, string, number
   local h, err = child.spawn(argv, {
@@ -49,12 +50,16 @@ return {
 
     local sha = input.sha as string
     if not sha or sha == "" then
-      local tmp = os.tmpname()
-      local ok, out, code = run({"curl", "-fsSL", "-o", tmp, url})
-      if not ok then
-        os.remove(tmp)
-        return "error: download failed (exit " .. tostring(code) .. "): " .. (out or "")
+      local result = fetch.Fetch(url)
+      if not result.ok then
+        return "error: download failed: " .. (result.err or "unknown error")
       end
+      if result.status ~= 200 then
+        return "error: download failed with status " .. tostring(result.status)
+      end
+      
+      local tmp = os.tmpname()
+      cio.barf(tmp, result.body)
       local sha_ok, sha_out, sha_code = run({"sha256sum", tmp})
       os.remove(tmp)
       if not sha_ok then
