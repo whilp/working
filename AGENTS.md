@@ -41,6 +41,9 @@ make publish
 
 # reflect on a specific date
 DATE=2025-01-15 make reflect
+
+# run dependency bump
+REPO=whilp/working make bump
 ```
 
 the work workflow runs hourly. the reflect workflow runs daily at 06:00 UTC. both support manual dispatch.
@@ -94,10 +97,14 @@ skills/               agent skills and their tools
     tools/            tl tool modules (close-issue, create-issue, grep-repo)
   tests/              audit and improve tests
     SKILL.md          tests skill prompt
+  bump/               check for dependency updates
+    SKILL.md          bump skill prompt
+    tools/            tl tool modules (get-latest-release, update-dep)
 .github/workflows/
   test.yml            CI: runs `make -j ci` on push/PR
   work.yml            scheduled work loop: runs `make work` hourly
   reflect.yml         daily reflect loop: runs `make reflect`
+  bump.yml            manual dependency bump: runs `make bump`
 ```
 
 ## docs
@@ -113,6 +120,6 @@ skills/               agent skills and their tools
 2. read the relevant skill SKILL.md and tool .tl files before editing.
 3. every tool .tl file must have a corresponding test_*.tl file.
 4. run `make ci` before committing. all checks must pass.
-5. use `component: action` format for commit messages and PR titles (e.g. `pick: add priority sorting`, `docs: update setup instructions`). lowercase, imperative. common components: skill names (`pick`, `plan`, `do`, `check`, `act`, `reflect`, `triage`), `docs`, `ci`, `tools`.
+5. use `component: action` format for commit messages and PR titles (e.g. `pick: add priority sorting`, `docs: update setup instructions`). lowercase, imperative. common components: skill names (`pick`, `plan`, `do`, `check`, `act`, `reflect`, `triage`, `bump`), `docs`, `ci`, `tools`.
 6. tool modules return a table with `name`, `description`, `input_schema`, `execute`.
 7. tests validate tool record structure and input validation (no external calls).
