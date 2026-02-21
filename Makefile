@@ -57,8 +57,8 @@ ah: $(ah)
 cosmic: $(cosmic)
 
 # sources
-tl_all := $(wildcard skills/*/tools/*.tl) $(wildcard skills/*/lib/*.tl)
-tl_tests := $(wildcard skills/*/tools/test_*.tl) $(wildcard skills/*/lib/test_*.tl)
+tl_all := $(wildcard skills/*/tools/*.tl) $(wildcard skills/*/lib/*.tl) $(wildcard lib/*/*.tl)
+tl_tests := $(wildcard skills/*/tools/test_*.tl) $(wildcard skills/*/lib/test_*.tl) $(wildcard lib/*/test_*.tl)
 tl_srcs := $(filter-out $(tl_tests),$(tl_all))
 
 TL_PATH := /zip/.lua/?.tl;/zip/.lua/?/init.tl;/zip/.lua/types/?.d.tl;/zip/.lua/types/?/init.d.tl
@@ -86,9 +86,21 @@ $(o)/%.tl.fmt: %.tl $(cosmic)
 check-format: $(all_fmt_checks)
 	@$(cosmic) --report $(all_fmt_checks)
 
-# ci: type checks + format checks + tests
+# length checking (file length ratchet)
+all_files := $(shell git ls-files)
+all_length_checks := $(patsubst %,$(o)/%.lint,$(all_files))
+
+$(o)/%.lint: % lib/build/lint.tl $(cosmic)
+	@mkdir -p $(@D)
+	-@$(cosmic) --test $@ $(cosmic) lib/build/lint.tl $<
+
+.PHONY: check-length
+check-length: $(all_length_checks)
+	@$(cosmic) --report $(all_length_checks)
+
+# ci: type checks + format checks + length checks + tests
 .PHONY: ci
-ci: check-types check-format test
+ci: check-types check-format check-length test
 
 # tests
 all_test_results := $(patsubst %.tl,$(o)/%.test,$(tl_tests))
@@ -110,6 +122,7 @@ help:
 	@echo "  test                Run tests"
 	@echo "  check-types         Run teal type checker on all .tl files"
 	@echo "  check-format        Check formatting on all .tl files"
+	@echo "  check-length        File length lint check (500-line default)"
 	@echo "  work                Run full work loop (pick -> plan -> do -> check -> act)"
 	@echo "  pick                Pick a work item: PR with feedback or issue (REPO=owner/repo)"
 	@echo "  clone               Clone repo and checkout work branch"

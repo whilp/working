@@ -32,7 +32,15 @@ both are pinned by URL and sha256 in `deps/*.mk` files, included by the Makefile
 
 ## ci
 
-`make ci` runs three checks in the github actions workflow:
+`make ci` runs four checks in the github actions workflow:
 1. `check-types` — teal type checking on all non-test .tl files
 2. `check-format` — formatting check on all non-test .tl files
-3. `test` — runs all test_*.tl files via `cosmic --test`, reports via `cosmic --report`
+3. `check-length` — file length lint, fails if any tracked file exceeds its limit
+4. `test` — runs all test_*.tl files via `cosmic --test`, reports via `cosmic --report`
+
+## file length ratchet
+
+`lib/build/lint.tl` checks all tracked files against a 500-line default limit. files that need higher limits are listed in the `OVERRIDES` table with explicit line counts. this prevents files from growing unbounded.
+
+- `make check-length` — run the lint check on all git-tracked files
+- to tighten the ratchet: shrink a file, then manually lower (or remove) its override in `lib/build/lint.tl`
