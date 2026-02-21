@@ -107,7 +107,7 @@ $(ci_log): $(repo_ready) $(issue) $(cosmic)
 	@if [ "$(item_type)" = "pr" ]; then \
 		echo "==> ci-log"; \
 		sha=$$(cat $(repo_dir)/remote-sha); \
-		$(cosmic) skills/plan/tools/get-ci-log.tl "$$sha" $(ci_log); \
+		$(cosmic) skills/plan/lib/get-ci-log.tl "$$sha" $(ci_log); \
 	else \
 		touch $@; \
 	fi
