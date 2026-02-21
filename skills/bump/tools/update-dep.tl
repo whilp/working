@@ -3,19 +3,9 @@
 -- downloads an asset, computes sha256, and writes deps/<dep>.mk.
 -- module tool: returns a Tool record for ah to load via -t
 
-local child = require("cosmic.child")
 local cio = require("cosmic.io")
 local fetch = require("cosmic.fetch")
-
-local function run(argv: {string}): boolean | string, string, number
-  local h, err = child.spawn(argv, {
-      stderr = 1,
-    })
-  if not h then
-    return false, err or "spawn failed", -1
-  end
-  return h:read()
-end
+local hash = require("cosmic.hash")
 
 local valid_deps: {string: boolean} = {
   ah = true,
@@ -52,23 +42,13 @@ return {
     if not sha or sha == "" then
       local result = fetch.Fetch(url)
       if not result.ok then
-        return "error: download failed: " .. (result.err or "unknown error")
+        return "error: download failed: " .. (result.error or "unknown error")
       end
       if result.status ~= 200 then
         return "error: download failed with status " .. tostring(result.status)
       end
-      
-      local tmp = os.tmpname()
-      cio.barf(tmp, result.body)
-      local sha_ok, sha_out, sha_code = run({"sha256sum", tmp})
-      os.remove(tmp)
-      if not sha_ok then
-        return "error: sha256sum failed (exit " .. tostring(sha_code) .. "): " .. (sha_out or "")
-      end
-      sha = (sha_out or ""):match("^(%S+)")
-      if not sha or sha == "" then
-        return "error: could not parse sha256sum output"
-      end
+
+      sha = hash.sha256_hex(result.body)
     end
 
     local content = dep .. "_url := " .. url .. "\n" .. dep .. "_sha := " .. sha .. "\n"

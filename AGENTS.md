@@ -104,7 +104,7 @@ skills/               agent skills and their tools
   test.yml            CI: runs `make -j ci` on push/PR
   work.yml            scheduled work loop: runs `make work` hourly
   reflect.yml         daily reflect loop: runs `make reflect`
-  bump.yml            daily dependency bump: runs `make bump`
+  bump.yml            manual dependency bump: runs `make bump`
 ```
 
 ## docs

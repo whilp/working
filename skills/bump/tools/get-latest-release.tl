@@ -27,11 +27,6 @@ return {
     required = {"repo", "asset_name"},
   },
   execute = function(input: {string: any}): string
-    local token = os.getenv("GH_TOKEN")
-    if not token or token == "" then
-      return "error: GH_TOKEN environment variable not set"
-    end
-
     local repo = input.repo as string
     if not repo or repo == "" then
       return "error: repo required"
@@ -40,6 +35,11 @@ return {
     local asset_name = input.asset_name as string
     if not asset_name or asset_name == "" then
       return "error: asset_name required"
+    end
+
+    local token = os.getenv("GH_TOKEN")
+    if not token or token == "" then
+      return "error: GH_TOKEN environment variable not set"
     end
 
     local argv: {string} = {
