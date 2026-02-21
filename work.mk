@@ -84,6 +84,7 @@ $(repo_ready): $(issue)
 		echo "==> checkout existing PR branch $(branch)"; \
 		git -C $(repo_dir) checkout $(branch); \
 		git -C $(repo_dir) pull origin $(branch); \
+		git -C $(repo_dir) rev-parse HEAD > $(repo_dir)/remote-sha; \
 		echo "==> rebase on $(default_branch)"; \
 		git -C $(repo_dir) rebase $(default_branch) || { \
 			echo "==> rebase conflict, aborting and resetting to $(default_branch)"; \
@@ -105,7 +106,7 @@ $(ci_log): $(repo_ready) $(issue) $(cosmic)
 	@mkdir -p $(plan_dir)
 	@if [ "$(item_type)" = "pr" ]; then \
 		echo "==> ci-log"; \
-		sha=$$(cat $(repo_ready)); \
+		sha=$$(cat $(repo_dir)/remote-sha); \
 		$(cosmic) skills/plan/tools/get-ci-log.tl "$$sha" $(ci_log); \
 	else \
 		touch $@; \
