@@ -1,6 +1,6 @@
--- skills/plan/tools/test_get_ci_log.tl: tests for get-ci-log tool
+-- skills/plan/lib/test_get_ci_log.tl: tests for get-ci-log tool
 
-local tool = require("skills.plan.tools.get-ci-log")
+local tool = require("skills.plan.lib.get-ci-log")
 
 -- tool record structure
 assert(tool.name == "get_ci_log", "name must be get_ci_log")

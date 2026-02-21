@@ -1,4 +1,4 @@
--- skills/plan/tools/get-ci-log.tl: fetch CI failure logs for a commit
+-- skills/plan/lib/get-ci-log.tl: fetch CI failure logs for a commit
 --
 -- given a repo and commit sha, finds failing check runs and downloads
 -- their logs. used by the ci-log make target to pre-fetch logs before
