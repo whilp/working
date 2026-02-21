@@ -132,6 +132,7 @@ help:
 	@echo "  triage              Review open issues and close stale ones (REPO=owner/repo)"
 	@echo "  docs                Audit and update documentation files (REPO=owner/repo)"
 	@echo "  tests               Audit and improve tests (REPO=owner/repo)"
+	@echo "  bump                Check for dependency updates and open PR (REPO=owner/repo)"
 	@echo "  reflect             Run reflect loop (fetch -> analyze -> publish)"
 	@echo "  fetch               Fetch workflow run logs and artifacts"
 	@echo "  analyze             Analyze fetched data into reflection.md"

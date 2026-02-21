@@ -359,3 +359,57 @@ $(tests_done): $(tests_repo_ready) $(ah)
 		--unveil $(tests_dir):rwc \
 		--unveil .:r \
 		<<< ""
+
+# --- bump ---
+# standalone target: check for new releases of ah and cosmic, update deps.
+# always targets whilp/working. not part of the main work chain.
+
+bump_dir := $(o)/bump
+bump_done := $(bump_dir)/bump.json
+
+# bump needs the repo cloned and on the default branch.
+bump_repo_ready := $(bump_dir)/.repo-ready
+
+$(bump_repo_ready):
+	@if [ ! -d $(repo_dir)/.git ]; then \
+		echo "==> clone $(REPO)"; \
+		gh repo clone $(REPO) $(repo_dir); \
+	fi
+	@echo "==> fetch and checkout default branch for bump"
+	@git -C $(repo_dir) fetch origin
+	@git -C $(repo_dir) checkout $(default_branch:origin/%=%)
+	@git -C $(repo_dir) pull origin $(default_branch:origin/%=%)
+	@mkdir -p $(bump_dir)
+	@touch $@
+
+.PHONY: bump
+bump: $(bump_done)
+
+bump_branch := bump/$(shell date -u +%Y-%m-%d)
+
+$(bump_done): $(bump_repo_ready) $(ah) $(cosmic)
+	@echo "==> bump"
+	@mkdir -p $(bump_dir)
+	@git -C $(repo_dir) checkout -B $(bump_branch)
+	@timeout 120 $(ah) -n \
+		-m sonnet \
+		--sandbox \
+		--skill bump \
+		--must-produce $(bump_done) \
+		--max-tokens 50000 \
+		--db $(bump_dir)/session.db \
+		--unveil $(repo_dir):rwc \
+		--unveil $(bump_dir):rwc \
+		--unveil .:r \
+		--tool "get_latest_release=skills/bump/tools/get-latest-release.tl" \
+		--tool "update_dep=skills/bump/tools/update-dep.tl" \
+		--tool "bash=" \
+		<<< ""
+	@if git -C $(repo_dir) diff --quiet HEAD; then \
+		echo "==> bump: no changes"; \
+	else \
+		echo "==> bump: pushing changes"; \
+		git -C $(repo_dir) remote set-url origin https://x-access-token:$$GH_TOKEN@github.com/$(REPO).git; \
+		git -C $(repo_dir) push --force-with-lease -u origin $(bump_branch); \
+		gh pr create --repo $(REPO) --head $(bump_branch) --title "bump: update dependencies" --body "automated dependency update" || true; \
+	fi
