@@ -24,7 +24,7 @@ each phase is a make target with file-based dependencies. outputs go to `o/`.
 
 **check** — reviews the diff against the plan. for PRs, verifies each piece of feedback was addressed. writes verdict (`pass`, `needs-fixes`, `fail`) and actions to `o/check/actions.json`.
 
-**act** — executes actions: comments on the issue/PR, creates a PR (on pass, for issues only), transitions labels to `done` or `failed` (for issues) or `needs-review` (for PRs). writes `o/act.json`.
+**act** — deterministic script (`lib/work/act.tl`). executes actions from `o/check/actions.json`: comments on the issue/PR, creates a PR (on pass, for issues only), transitions labels to `done` or `failed` (for issues) or `needs-review` (for PRs). writes `o/act.json`. no agent invocation — runs directly via `cosmic`.
 
 ## convergence
 

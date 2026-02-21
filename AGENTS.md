@@ -77,6 +77,9 @@ when the app's permissions are changed in GitHub App settings, the installation 
 Makefile              build, test, ci targets; cosmic/ah dependency fetching
 work.mk               work loop targets (pick → clone → plan → do → push → check → act)
 reflect.mk            reflect loop targets (fetch → analyze → summarize → publish)
+lib/                  deterministic scripts (no agent invocation)
+  build/              build-time utilities (lint)
+  work/               work loop scripts (act)
 skills/               agent skills and their tools
   pick/               select next issue from github
     SKILL.md          pick skill prompt
@@ -87,8 +90,7 @@ skills/               agent skills and their tools
     SKILL.md          do skill prompt
   check/              review execution against plan
     SKILL.md          check skill prompt
-  act/                execute actions (comment, create PR, update labels)
-    SKILL.md          act skill prompt
+  act/                github action tools (comment, create PR, labels)
     tools/            tl tool modules (comment-issue, create-pr, set-issue-labels)
   reflect/            retrospective analysis of workflow runs
     SKILL.md          reflect skill prompt (fetch, analyze-run, summarize phases)
