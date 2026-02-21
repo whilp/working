@@ -81,6 +81,8 @@ lib/                  deterministic scripts (no agent invocation)
   build/              build-time utilities (lint)
   work/               work loop scripts (act)
 tools/                shared tool modules (comment-issue, create-pr, set-issue-labels)
+test/                 tests for shared modules
+  tools/              tests for shared tool modules
 skills/               agent skills and their tools
   pick/               select next issue from github
     SKILL.md          pick skill prompt
