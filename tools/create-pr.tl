@@ -1,4 +1,4 @@
--- skills/act/tools/create-pr.tl: create a GitHub pull request
+-- tools/create-pr.tl: create a GitHub pull request
 --
 -- reads WORK_REPO from environment to limit scope.
 -- module tool: returns a Tool record for ah to load via -t

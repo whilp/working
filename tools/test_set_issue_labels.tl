@@ -1,7 +1,7 @@
 #!/usr/bin/env cosmic
--- test_set_issue_labels.tl: tests for pick/set-issue-labels tool
+-- test_set_issue_labels.tl: tests for set-issue-labels tool
 
-local tool = require("skills.pick.tools.set-issue-labels")
+local tool = require("tools.set-issue-labels")
 
 local function test_tool_record()
   assert(tool.name == "set_issue_labels", "name should be set_issue_labels: " .. tostring(tool.name))
@@ -16,14 +16,14 @@ local function test_tool_record()
   local req = schema.required as {string}
   assert(req[1] == "issue_number", "issue_number should be required")
   assert(tool.execute, "should have execute function")
-  print("✓ pick/set_issue_labels tool record is valid")
+  print("✓ set_issue_labels tool record is valid")
 end
 test_tool_record()
 
 local function test_missing_env()
   local result = tool.execute({issue_number = 1})
   assert(result == "error: WORK_REPO environment variable not set", "should error on missing env: " .. result)
-  print("✓ pick/set_issue_labels rejects missing WORK_REPO")
+  print("✓ set_issue_labels rejects missing WORK_REPO")
 end
 test_missing_env()
 
@@ -31,8 +31,8 @@ local function test_missing_issue_number()
   local result = tool.execute({})
   -- env check comes first
   assert(result == "error: WORK_REPO environment variable not set", "should error on missing env: " .. result)
-  print("✓ pick/set_issue_labels rejects missing env before issue_number")
+  print("✓ set_issue_labels rejects missing env before issue_number")
 end
 test_missing_issue_number()
 
-print("\nAll pick/set_issue_labels tests passed!")
+print("\nAll set_issue_labels tests passed!")

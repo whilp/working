@@ -58,7 +58,7 @@ $(issue): $(ah) $(cosmic)
 		--tool "get_prs_with_feedback=skills/pick/tools/get-prs-with-feedback.tl" \
 		--tool "count_open_prs=skills/pick/tools/count-open-prs.tl" \
 		--tool "list_issues=skills/pick/tools/list-issues.tl" \
-		--tool "set_issue_labels=skills/pick/tools/set-issue-labels.tl" \
+		--tool "set_issue_labels=tools/set-issue-labels.tl" \
 		--tool "bash=" \
 		<<< ""
 
@@ -200,22 +200,9 @@ $(check_done): $(push_done) $(plan) $(issue) $(ah)
 
 # --- act ---
 
-act_dir := $(o)/act
-
-$(act_done): $(check_done) $(issue) $(ah) $(cosmic)
-	@mkdir -p $(act_dir)
+$(act_done): $(check_done) $(issue) $(cosmic)
 	@echo "==> act"
-	@timeout 60 $(ah) -n \
-		-m sonnet \
-		--skill act \
-		--must-produce $(act_done) \
-		--max-tokens 50000 \
-		--db $(act_dir)/session-$(LOOP).db \
-		--tool "comment_issue=skills/act/tools/comment-issue.tl" \
-		--tool "create_pr=skills/act/tools/create-pr.tl" \
-		--tool "set_issue_labels=skills/act/tools/set-issue-labels.tl" \
-		--tool "bash=" \
-		<<< "ISSUE_FILE=$(issue) ACTIONS_FILE=$(actions)"
+	@$(cosmic) lib/work/act.tl $(issue) $(actions) $(act_done)
 
 # --- work: convergence loop ---
 
@@ -274,8 +261,8 @@ $(triage_done): $(triage_repo_ready) $(ah) $(cosmic)
 		--tool "ensure_labels=skills/pick/tools/ensure-labels.tl" \
 		--tool "close_issue=skills/triage/tools/close-issue.tl" \
 		--tool "create_issue=skills/triage/tools/create-issue.tl" \
-		--tool "comment_issue=skills/act/tools/comment-issue.tl" \
-		--tool "set_issue_labels=skills/act/tools/set-issue-labels.tl" \
+		--tool "comment_issue=tools/comment-issue.tl" \
+		--tool "set_issue_labels=tools/set-issue-labels.tl" \
 		--tool "grep_repo=skills/triage/tools/grep-repo.tl" \
 		--tool "bash=" \
 		<<< ""
