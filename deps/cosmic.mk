@@ -1,2 +1,2 @@
-cosmic_url := https://github.com/whilp/cosmic/releases/download/2026-02-17-93239ce/cosmic-lua
-cosmic_sha := f7847182ec5c1c205e34b5e99dd68ddb02e280fda0f9cad4ee7eb19fd52a4858
+cosmic_url := https://github.com/whilp/cosmic/releases/download/2026-02-21-9cfae8d/cosmic-lua
+cosmic_sha := 61596fa28a6f43bd20fcb48b5fe741b9eb0dfdb146e287679d58b2befded4a11
