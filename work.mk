@@ -48,7 +48,7 @@ LOOP ?= 1
 $(issue): $(ah) $(cosmic)
 	@mkdir -p $(pick_dir)
 	@echo "==> pick"
-	@timeout 60 $(ah) -n \
+	@timeout 120 $(ah) -n \
 		-m sonnet \
 		--skill pick \
 		--must-produce $(issue) \
