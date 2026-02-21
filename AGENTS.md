@@ -81,12 +81,16 @@ lib/                  deterministic scripts (no agent invocation)
   build/              build-time utilities (lint)
   work/               work loop scripts (act)
 tools/                shared tool modules (comment-issue, create-pr, set-issue-labels)
+test/                 tests for shared modules
+  tools/              tests for shared tool modules
 skills/               agent skills and their tools
   pick/               select next issue from github
     SKILL.md          pick skill prompt
     tools/            tl tool modules (list-issues, count-open-prs, ensure-labels, get-prs-with-feedback)
+    tests/            tests for pick tools
   plan/               research codebase and write a plan
     SKILL.md          plan skill prompt
+    tests/            tests for plan lib modules
   do/                 execute the plan
     SKILL.md          do skill prompt
   check/              review execution against plan
@@ -94,14 +98,17 @@ skills/               agent skills and their tools
   reflect/            retrospective analysis of workflow runs
     SKILL.md          reflect skill prompt (fetch, analyze-run, summarize phases)
     tools/            tl tool modules (get-workflow-runs)
+    tests/            tests for reflect tools
   triage/             review open issues, close stale ones, split oversized ones
     SKILL.md          triage skill prompt
     tools/            tl tool modules (close-issue, create-issue, grep-repo)
+    tests/            tests for triage tools
   tests/              audit and improve tests
     SKILL.md          tests skill prompt
   bump/               check for dependency updates
     SKILL.md          bump skill prompt
     tools/            tl tool modules (get-latest-release, update-dep)
+    tests/            tests for bump tools
 .github/workflows/
   test.yml            CI: runs `make -j ci` on push/PR
   work.yml            scheduled work loop: runs `make work` hourly
@@ -120,7 +127,7 @@ skills/               agent skills and their tools
 
 1. before starting work on a new problem, check the current branch with `git branch --show-current`. if on `main` (or another default branch), create and switch to a new feature branch (e.g. `git checkout -b issue-<number>-<short-description>`). never commit directly to `main`.
 2. read the relevant skill SKILL.md and tool .tl files before editing.
-3. every tool .tl file must have a corresponding test_*.tl file.
+3. every tool .tl file must have a corresponding test_*.tl file. tests live in a separate `tests/` subdirectory (`test/tools/` for shared tools, `skills/NAME/tests/` for skill tools) — not alongside the tool source. `ah` loads all `.tl` files in `tools/` directories as tools; keeping tests separate prevents them from being registered as tools.
 4. run `make ci` before committing. all checks must pass.
 5. use `component: action` format for commit messages and PR titles (e.g. `pick: add priority sorting`, `docs: update setup instructions`). lowercase, imperative. common components: skill names (`pick`, `plan`, `do`, `check`, `act`, `reflect`, `triage`, `bump`), `docs`, `ci`, `tools`.
 6. tool modules return a table with `name`, `description`, `input_schema`, `execute`.
