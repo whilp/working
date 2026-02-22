@@ -14,6 +14,7 @@ You are executing a work item. Follow the plan.
 - The work item JSON follows this prompt after `---`.
 - If `type` is `"pr"`, you are addressing review feedback on an existing PR.
 - If `type` is `"issue"`, you are implementing new work.
+- Build dependencies are pre-fetched under `o/repo/o/`. You can run `make ci` (or individual targets like `make test`, `make check-types`, `make lint`) inside the sandbox. Read `o/build/log.txt` for the initial CI output and `o/build/log.txt.exit` for the exit code.
 
 ## Setup
 
@@ -37,7 +38,7 @@ previous check. Address those issues first, then continue with any remaining pla
    d. Commit with a descriptive message for that step.
 5. Run format and lint checks from `o/repo/AGENTS.md` (e.g. `make check-format`,
    `make format`). Fix any issues and amend the last commit.
-6. Run validation steps from the plan (using `git -C o/repo` or `cd o/repo && ...`).
+6. Run `cd o/repo && make ci` to validate all changes. Fix any failures and amend.
 7. If validation requires fixes, stage and commit them.
 
 ## Forbidden

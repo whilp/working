@@ -3,7 +3,7 @@
 the system implements a PDCA (plan-do-check-act) loop for github issues and PR feedback. `make work` drives the full cycle:
 
 ```
-pick → clone → plan → do → push → check → act
+pick → clone → build → plan → do → push → check → act
 ```
 
 pick prefers PRs with review feedback or failing CI checks over new issues. when a PR has `CHANGES_REQUESTED` status or failing checks, the pipeline addresses that. otherwise, it picks a new issue.
@@ -15,6 +15,8 @@ each phase is a make target with file-based dependencies. outputs go to `o/`.
 **pick** — selects the next work item. first checks for open PRs that need attention: `CHANGES_REQUESTED` review status or failing CI checks (excluding PRs labeled `needs-review`, which are waiting for the reviewer). if found, picks the oldest one. otherwise, selects one open `todo`-labeled issue. ensures labels exist, checks PR limits, picks by priority/age/clarity. transitions issues to `doing`. writes `o/pick/issue.json` with a `type` field (`"pr"` or `"issue"`) and, for PRs, a `reason` field indicating why it was selected.
 
 **clone** — clones (or fetches) the target repo into `o/repo/`. for PRs, checks out the existing branch. for issues, creates a fresh feature branch from the default branch.
+
+**build** — runs `make ci` in the target repo outside the sandbox. fetches build dependencies (cosmic, etc.) and caches them under `o/repo/o/`. captures output to `o/build/log.txt` with exit code in `o/build/log.txt.exit`. failures are not fatal — the log is informational for downstream phases. as a side effect, sandboxed phases can now run `make ci` without network access since all dependencies are pre-fetched.
 
 **plan** — reads the repo and work item, writes a step-by-step plan to `o/plan/plan.md`. for PRs, the plan addresses each piece of review feedback. for issues, the plan covers the implementation. research only, no source changes.
 

@@ -13,6 +13,7 @@ You are planning a work item. Research the codebase and write a plan.
 - The work item JSON follows this prompt after `---`. Fields: `type`, `number`, `title`, `body`, `url`, `branch`.
 - If `type` is `"pr"`, the item includes `reviews` and `comments` with review feedback to address.
 - If `type` is `"issue"`, the item is a new issue to implement.
+- `o/build/log.txt` contains the output of `make ci` run in the target repo after clone. `o/build/log.txt.exit` contains the exit code. Build dependencies (cosmic, etc.) are already fetched under `o/repo/o/`, so `make ci` works inside the sandbox.
 
 ## Instructions
 
