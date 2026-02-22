@@ -1,12 +1,17 @@
 # work.mk: work targets
 #
 # implements the PDCA work loop as make targets:
-#   pick -> clone -> plan -> do -> push -> check -> act
+#   pick -> clone -> build -> plan -> do -> push -> check -> act
 #
 # pick prefers PRs with review feedback or failing CI checks over new issues.
 # when a PR with CHANGES_REQUESTED or failing checks is found, pick selects
 # it and the rest of the pipeline addresses the feedback. otherwise, pick
 # selects a new issue.
+#
+# build runs `make ci` in the target repo after clone. this fetches build
+# dependencies (cosmic, etc.) and produces build artifacts under o/repo/o/.
+# sandboxed phases (plan, do, check) can then run `make ci` without network
+# access since deps are already satisfied.
 #
 # convergence: check writes o/do/feedback.md when verdict is needs-fixes.
 # since do depends on feedback.md, the next make run re-executes do -> push -> check.
@@ -24,6 +29,7 @@ default_branch = $(or $(shell git -C $(repo_dir) symbolic-ref refs/remotes/origi
 # named targets
 pick_dir := $(o)/pick
 issue := $(pick_dir)/issue.json
+build_log := $(o)/build/log.txt
 plan_dir := $(o)/plan
 ci_log := $(plan_dir)/ci-log.txt
 plan := $(plan_dir)/plan.md
@@ -100,9 +106,24 @@ $(repo_ready): $(issue)
 .PHONY: clone
 clone: $(repo_ready)
 
+# --- build ---
+# run make ci in the target repo before entering sandbox. this fetches build
+# dependencies and caches them under o/repo/o/. the output is recorded so
+# plan/do/check can read it. failures are not fatal — the log is informational.
+
+$(build_log): $(repo_ready)
+	@mkdir -p $(@D)
+	@echo "==> build"
+	@cd $(repo_dir) && make ci >$(CURDIR)/$(build_log) 2>&1; \
+	 echo $$? > $(CURDIR)/$(build_log).exit
+	@echo "  exit=$$(cat $(build_log).exit)"
+
+.PHONY: build
+build: $(build_log)
+
 # --- ci-log ---
 
-$(ci_log): $(repo_ready) $(issue) $(cosmic)
+$(ci_log): $(build_log) $(repo_ready) $(issue) $(cosmic)
 	@mkdir -p $(plan_dir)
 	@if [ "$(item_type)" = "pr" ]; then \
 		echo "==> ci-log"; \
@@ -132,6 +153,7 @@ $(plan): $(ci_log) $(repo_ready) $(issue) $(ah)
 		--db $(plan_dir)/session-$(LOOP).db \
 		--unveil $(repo_dir):rx \
 		--unveil $(plan_dir):rwc \
+		--unveil $(o)/build:r \
 		--unveil .:r \
 		< $(issue)
 
@@ -161,6 +183,7 @@ $(do_done): $(repo_ready) $(plan) $(feedback) $(issue) $(ah)
 		--unveil $(repo_dir):rwcx \
 		--unveil $(do_dir):rwc \
 		--unveil $(plan_dir):r \
+		--unveil $(o)/build:r \
 		--unveil .:r \
 		< $(issue)
 	@touch $@
@@ -194,6 +217,7 @@ $(check_done): $(push_done) $(plan) $(issue) $(ah)
 		--unveil $(check_dir):rwc \
 		--unveil $(do_dir):rwc \
 		--unveil $(plan_dir):r \
+		--unveil $(o)/build:r \
 		--unveil .:r \
 		< $(issue)
 	@touch $@

@@ -13,6 +13,7 @@ You are checking a work item. Review the execution against the plan.
 - The work item JSON follows this prompt after `---`.
 - If `type` is `"pr"`, you are checking that review feedback and/or CI failures were addressed (check the `reason` field).
 - If `type` is `"issue"`, you are checking new work against the plan.
+- Build dependencies are pre-fetched under `o/repo/o/`. You can run `make ci` (or individual targets like `make test`, `make check-types`, `make lint`) inside the sandbox.
 
 ## Setup
 
@@ -27,7 +28,8 @@ Read `o/plan/plan.md` for the plan. Read `o/do/do.md` for the execution summary.
    - For issues: `git -C o/repo diff origin/main...HEAD`
    - For PRs: review the full branch diff (`git -C o/repo diff origin/main...HEAD`)
      for context, but note that only new commits (since `o/repo/sha`) are in scope.
-2. Run validation steps from the plan.
+2. Run `cd o/repo && make ci` to validate the changes. If it fails, the verdict
+   MUST be `needs-fixes` (unless the failure is unrelated to the changes).
 3. Enforce scope limits:
    a. Extract the planned file list from `o/plan/plan.md`'s `## Files` section.
    b. List actual changed files. The diff range depends on the item type:

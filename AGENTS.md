@@ -75,7 +75,7 @@ when the app's permissions are changed in GitHub App settings, the installation 
 
 ```
 Makefile              build, test, ci targets; cosmic/ah dependency fetching
-work.mk               work loop targets (pick → clone → plan → do → push → check → act)
+work.mk               work loop targets (pick → clone → build → plan → do → push → check → act)
 reflect.mk            reflect loop targets (fetch → analyze → summarize → publish)
 lib/                  deterministic scripts (no agent invocation)
   build/              build-time utilities (lint)
