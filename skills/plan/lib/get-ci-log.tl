@@ -21,14 +21,14 @@ local function execute(input: {string: any}): string
   if not output_file or output_file == "" then return "error: output_file required" end
 
   -- fetch check runs for this commit
-  local _h_checks, _err_checks = child.spawn({
+  local h, err = child.spawn({
       "gh", "api", "repos/" .. repo .. "/commits/" .. sha .. "/check-runs",
       "--jq", ".check_runs[] | select(.conclusion == \"failure\") | .id",
     }, {stderr = 1})
-  if not _h_checks then
-    return "error: gh failed: " .. (_err_checks or "spawn failed")
+  if not h then
+    return "error: gh failed: " .. (err or "spawn failed")
   end
-  local ok_checks, out_checks, code_checks = _h_checks:read()
+  local ok_checks, out_checks, code_checks = h:read()
   if not ok_checks then
     if code_checks == 4 then
       return "error: gh access denied (exit 4): " .. (out_checks or "")
@@ -56,38 +56,30 @@ local function execute(input: {string: any}): string
   local seen_runs: {string: boolean} = {}
 
   for _, check_id in ipairs(run_ids) do
-    local _h_detail, _err_detail = child.spawn({
+    local h_detail, err_detail = child.spawn({
         "gh", "api", "repos/" .. repo .. "/check-runs/" .. check_id,
         "--jq", ".details_url",
       }, {stderr = 1})
-    local ok_detail, out_detail, _: boolean | string, string, number
-    if not _h_detail then
-      ok_detail = false
-      out_detail = _err_detail or "spawn failed"
-    else
-      ok_detail, out_detail, _ = _h_detail:read()
-    end
+    if not h_detail then goto continue end
+    local ok_detail, out_detail = h_detail:read()
     if ok_detail and out_detail then
       local run_id = out_detail:match("/runs/(%d+)")
       if run_id and not seen_runs[run_id] then
         seen_runs[run_id] = true
-        local _h_log, _err_log = child.spawn({
+        local h_log = child.spawn({
             "gh", "run", "view", run_id,
             "--repo", repo,
             "--log",
           }, {stderr = 1})
-        local ok_log, out_log, _2: boolean | string, string, number
-        if not _h_log then
-          ok_log = false
-          out_log = _err_log or "spawn failed"
-        else
-          ok_log, out_log, _2 = _h_log:read()
-        end
-        if ok_log and out_log then
-          logs[#logs + 1] = out_log
+        if h_log then
+          local ok_log, out_log = h_log:read()
+          if ok_log and out_log then
+            logs[#logs + 1] = out_log
+          end
         end
       end
     end
+    ::continue::
   end
 
   local result = table.concat(logs, "\n")

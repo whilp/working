@@ -37,16 +37,16 @@ return {
 
     io.stderr:write("count_open_prs: querying " .. owner .. "/" .. name .. "\n")
 
-    local _h, _err = child.spawn({
+    local h, err = child.spawn({
         "gh", "api", "graphql",
         "-f", "query=" .. QUERY,
         "-f", "owner=" .. owner,
         "-f", "name=" .. name,
       }, {stderr = 1})
-    if not _h then
-      return "error: gh failed: " .. (_err or "spawn failed")
+    if not h then
+      return "error: gh failed: " .. (err or "spawn failed")
     end
-    local ok, out, code = _h:read()
+    local ok, out, code = h:read()
     if not ok then
       if code == 4 then
         return "error: gh access denied (exit 4): " .. (out or "")

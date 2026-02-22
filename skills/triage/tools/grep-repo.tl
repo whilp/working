@@ -35,7 +35,7 @@ return {
       search_path = repo_dir .. "/" .. sub
     end
 
-    local _h, _err = child.spawn({
+    local h, err = child.spawn({
         "grep", "-rn", "-E",
         "--include=*.tl",
         "--include=*.lua",
@@ -48,10 +48,10 @@ return {
         "-e", pattern,
         search_path,
       }, {stderr = 1})
-    if not _h then
-      return "error: grep failed: " .. (_err or "spawn failed")
+    if not h then
+      return "error: grep failed: " .. (err or "spawn failed")
     end
-    local ok, out, code = _h:read()
+    local ok, out, code = h:read()
 
     if not ok then
       if code == 1 then

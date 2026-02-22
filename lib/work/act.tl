@@ -26,16 +26,16 @@ end
 local function comment_issue(repo: string, issue_number: number, body: string): boolean, string
   local tmp = os.tmpname()
   cio.barf(tmp, body)
-  local _h_comment, _err_comment = child.spawn({
+  local h, err = child.spawn({
       "gh", "issue", "comment", tostring(issue_number),
       "--repo", repo,
       "--body-file", tmp,
     }, {stderr = 1})
   os.remove(tmp)
-  if not _h_comment then
-    return false, "gh failed: " .. (_err_comment or "spawn failed")
+  if not h then
+    return false, "gh failed: " .. (err or "spawn failed")
   end
-  local ok, out, code = _h_comment:read()
+  local ok, out, code = h:read()
   if not ok then
     return false, "gh failed (exit " .. tostring(code) .. "): " .. (out or "")
   end
@@ -45,7 +45,7 @@ end
 local function create_pr(repo: string, branch: string, title: string, body: string): boolean, string
   local tmp = os.tmpname()
   cio.barf(tmp, body)
-  local _h_pr, _err_pr = child.spawn({
+  local h, err = child.spawn({
       "gh", "pr", "create",
       "--repo", repo,
       "--head", branch,
@@ -53,10 +53,10 @@ local function create_pr(repo: string, branch: string, title: string, body: stri
       "--body-file", tmp,
     }, {stderr = 1})
   os.remove(tmp)
-  if not _h_pr then
-    return false, "gh failed: " .. (_err_pr or "spawn failed")
+  if not h then
+    return false, "gh failed: " .. (err or "spawn failed")
   end
-  local ok, out, code = _h_pr:read()
+  local ok, out, code = h:read()
   if not ok then
     if out and out:find("already exists") then
       return true, nil
@@ -76,11 +76,11 @@ local function set_labels(repo: string, issue_number: number, add: {string}, rem
     table.insert(argv, "--remove-label")
     table.insert(argv, label)
   end
-  local _h_labels, _err_labels = child.spawn(argv, {stderr = 1})
-  if not _h_labels then
-    return false, "gh failed: " .. (_err_labels or "spawn failed")
+  local h, err = child.spawn(argv, {stderr = 1})
+  if not h then
+    return false, "gh failed: " .. (err or "spawn failed")
   end
-  local ok, out, code = _h_labels:read()
+  local ok, out, code = h:read()
   if not ok then
     return false, "gh failed (exit " .. tostring(code) .. "): " .. (out or "")
   end

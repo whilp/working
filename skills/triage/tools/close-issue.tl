@@ -45,11 +45,11 @@ return {
     local num = tostring(math.floor(issue_number))
     local argv: {string} = {"gh", "issue", "close", num, "--repo", repo, "--reason", reason}
 
-    local _h, _err = child.spawn(argv, {stderr = 1})
-    if not _h then
-      return "error: gh failed: " .. (_err or "spawn failed")
+    local h, err = child.spawn(argv, {stderr = 1})
+    if not h then
+      return "error: gh failed: " .. (err or "spawn failed")
     end
-    local ok, out, code = _h:read()
+    local ok, out, code = h:read()
     if not ok then
       return "error: gh failed (exit " .. tostring(code) .. "): " .. (out or "")
     end

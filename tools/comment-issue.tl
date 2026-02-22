@@ -70,12 +70,12 @@ local tool = {
     local tmp = os.tmpname()
     cio.barf(tmp, body)
 
-    local _h, _err = child.spawn({"gh", "issue", "comment", num, "--repo", repo, "--body-file", tmp}, {stderr = 1})
+    local h, err = child.spawn({"gh", "issue", "comment", num, "--repo", repo, "--body-file", tmp}, {stderr = 1})
     fs.unlink(tmp)
-    if not _h then
-      return "error: gh failed: " .. (_err or "spawn failed")
+    if not h then
+      return "error: gh failed: " .. (err or "spawn failed")
     end
-    local ok, out, code = _h:read()
+    local ok, out, code = h:read()
 
     if not ok then
       return "error: gh failed (exit " .. tostring(code) .. "): " .. (out or "")

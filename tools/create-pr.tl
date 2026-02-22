@@ -33,7 +33,7 @@ return {
     local tmp = os.tmpname()
     cio.barf(tmp, body or "")
 
-    local _h, _err = child.spawn({
+    local h, err = child.spawn({
         "gh", "pr", "create",
         "--repo", repo,
         "--head", branch,
@@ -41,10 +41,10 @@ return {
         "--body-file", tmp,
       }, {stderr = 1})
     fs.unlink(tmp)
-    if not _h then
-      return "error: gh failed: " .. (_err or "spawn failed")
+    if not h then
+      return "error: gh failed: " .. (err or "spawn failed")
     end
-    local ok, out, code = _h:read()
+    local ok, out, code = h:read()
 
     if not ok then
       if out and out:find("already exists") then

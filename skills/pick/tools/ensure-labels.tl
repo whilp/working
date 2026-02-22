@@ -25,15 +25,12 @@ return {
     local labels: {string} = (custom and #custom > 0) and custom or {"todo", "doing", "done", "failed", "needs-review"}
     local errors: {string} = {}
     for _, label in ipairs(labels) do
-      local _h, _err = child.spawn({"gh", "label", "create", label, "--repo", repo, "--force"}, {stderr = 1})
-      local ok, out, code: boolean | string, string, number
-      if not _h then
-        ok = false
-        out = _err or "spawn failed"
-        code = -1
-      else
-        ok, out, code = _h:read()
+      local h, err = child.spawn({"gh", "label", "create", label, "--repo", repo, "--force"}, {stderr = 1})
+      if not h then
+        table.insert(errors, label .. ": " .. (err or "spawn failed"))
+        goto continue
       end
+      local ok, out, code = h:read()
       if not ok then
         local msg: string
         if code == 4 then
@@ -43,6 +40,7 @@ return {
         end
         table.insert(errors, msg)
       end
+      ::continue::
     end
 
     if #errors > 0 then
