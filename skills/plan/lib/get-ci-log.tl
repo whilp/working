@@ -10,16 +10,6 @@
 
 local child = require("cosmic.child")
 
-local function run(argv: {string}): boolean | string, string, number
-  local h, err = child.spawn(argv, {
-      stderr = 1,
-    })
-  if not h then
-    return false, err or "spawn failed", -1
-  end
-  return h:read()
-end
-
 local repo = os.getenv("WORK_REPO") or ""
 
 local function execute(input: {string: any}): string
@@ -31,10 +21,14 @@ local function execute(input: {string: any}): string
   if not output_file or output_file == "" then return "error: output_file required" end
 
   -- fetch check runs for this commit
-  local ok_checks, out_checks, code_checks = run({
+  local _h_checks, _err_checks = child.spawn({
       "gh", "api", "repos/" .. repo .. "/commits/" .. sha .. "/check-runs",
       "--jq", ".check_runs[] | select(.conclusion == \"failure\") | .id",
-    })
+    }, {stderr = 1})
+  if not _h_checks then
+    return "error: gh failed: " .. (_err_checks or "spawn failed")
+  end
+  local ok_checks, out_checks, code_checks = _h_checks:read()
   if not ok_checks then
     if code_checks == 4 then
       return "error: gh access denied (exit 4): " .. (out_checks or "")
@@ -62,19 +56,33 @@ local function execute(input: {string: any}): string
   local seen_runs: {string: boolean} = {}
 
   for _, check_id in ipairs(run_ids) do
-    local ok_detail, out_detail, _ = run({
+    local _h_detail, _err_detail = child.spawn({
         "gh", "api", "repos/" .. repo .. "/check-runs/" .. check_id,
         "--jq", ".details_url",
-      })
+      }, {stderr = 1})
+    local ok_detail, out_detail, _: boolean | string, string, number
+    if not _h_detail then
+      ok_detail = false
+      out_detail = _err_detail or "spawn failed"
+    else
+      ok_detail, out_detail, _ = _h_detail:read()
+    end
     if ok_detail and out_detail then
       local run_id = out_detail:match("/runs/(%d+)")
       if run_id and not seen_runs[run_id] then
         seen_runs[run_id] = true
-        local ok_log, out_log, _ = run({
+        local _h_log, _err_log = child.spawn({
             "gh", "run", "view", run_id,
             "--repo", repo,
             "--log",
-          })
+          }, {stderr = 1})
+        local ok_log, out_log, _2: boolean | string, string, number
+        if not _h_log then
+          ok_log = false
+          out_log = _err_log or "spawn failed"
+        else
+          ok_log, out_log, _2 = _h_log:read()
+        end
         if ok_log and out_log then
           logs[#logs + 1] = out_log
         end

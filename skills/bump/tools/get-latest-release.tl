@@ -5,16 +5,6 @@
 
 local child = require("cosmic.child")
 
-local function run(argv: {string}): boolean | string, string, number
-  local h, err = child.spawn(argv, {
-      stderr = 1,
-    })
-  if not h then
-    return false, err or "spawn failed", -1
-  end
-  return h:read()
-end
-
 return {
   name = "get_latest_release",
   description = "Get the latest release tag and asset download URL for a GitHub repository.",
@@ -49,7 +39,11 @@ return {
       "--arg", "asset", asset_name,
     }
 
-    local ok, out, code = run(argv)
+    local _h, _err = child.spawn(argv, {stderr = 1})
+    if not _h then
+      return "error: gh failed: " .. (_err or "spawn failed")
+    end
+    local ok, out, code = _h:read()
     if not ok then
       if code == 4 then
         return "error: gh access denied (exit 4): " .. (out or "")

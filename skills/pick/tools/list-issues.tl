@@ -7,16 +7,6 @@
 local child = require("cosmic.child")
 local json = require("cosmic.json")
 
-local function run(argv: {string}): boolean | string, string, number
-  local h, err = child.spawn(argv, {
-      stderr = 1,
-    })
-  if not h then
-    return false, err or "spawn failed", -1
-  end
-  return h:read()
-end
-
 local COLLABORATOR_ASSOCIATIONS: {string: boolean} = {
   OWNER = true,
   MEMBER = true,
@@ -78,7 +68,11 @@ return {
         argv[#argv + 1] = "cursor=" .. cursor
       end
 
-      local ok, out, code = run(argv)
+      local _h, _err = child.spawn(argv, {stderr = 1})
+      if not _h then
+        return "error: gh failed: " .. (_err or "spawn failed")
+      end
+      local ok, out, code = _h:read()
       if not ok then
         if code == 4 then
           return "error: gh access denied (exit 4): " .. (out or "")

@@ -7,16 +7,6 @@
 local child = require("cosmic.child")
 local json = require("cosmic.json")
 
-local function run(argv: {string}): boolean | string, string, number
-  local h, err = child.spawn(argv, {
-      stderr = 1,
-    })
-  if not h then
-    return false, err or "spawn failed", -1
-  end
-  return h:read()
-end
-
 local repo = os.getenv("WORK_REPO") or ""
 
 return {
@@ -57,7 +47,11 @@ return {
     end
 
     -- create output directory
-    local ok_mkdir, err_mkdir, _ = run({"mkdir", "-p", output_dir})
+    local _h_mkdir, _err_mkdir = child.spawn({"mkdir", "-p", output_dir}, {stderr = 1})
+    if not _h_mkdir then
+      return "error: mkdir failed: " .. (_err_mkdir or "spawn failed")
+    end
+    local ok_mkdir, err_mkdir, _ = _h_mkdir:read()
     if not ok_mkdir then
       return "error: mkdir failed: " .. (err_mkdir or "")
     end
@@ -76,7 +70,11 @@ return {
       list_argv[#list_argv + 1] = workflow
     end
 
-    local ok_list, out_list, code_list = run(list_argv)
+    local _h_list, _err_list = child.spawn(list_argv, {stderr = 1})
+    if not _h_list then
+      return "error: gh run list failed: " .. (_err_list or "spawn failed")
+    end
+    local ok_list, out_list, code_list = _h_list:read()
     if not ok_list then
       return "error: gh run list failed (exit " .. tostring(code_list) .. "): " .. (out_list or "")
     end
@@ -93,15 +91,24 @@ return {
       local run_id = tostring(r.databaseId as number)
       local run_dir = output_dir .. "/" .. run_id
 
-      run({"mkdir", "-p", run_dir})
+      local _h_rundir = child.spawn({"mkdir", "-p", run_dir}, {stderr = 1})
+      if _h_rundir then _h_rundir:read() end
 
       -- download logs
       local log_file = run_dir .. "/log.txt"
-      local ok_log, out_log, code_log = run({
+      local _h_log, _err_log = child.spawn({
           "gh", "run", "view", run_id,
           "--repo", repo,
           "--log",
-        })
+        }, {stderr = 1})
+      local ok_log, out_log, code_log: boolean | string, string, number
+      if not _h_log then
+        ok_log = false
+        out_log = _err_log or "spawn failed"
+        code_log = -1
+      else
+        ok_log, out_log, code_log = _h_log:read()
+      end
       if ok_log then
         local cio = require("cosmic.io")
         cio.barf(log_file, out_log or "")
@@ -112,11 +119,19 @@ return {
 
       -- download artifacts
       local artifact_dir = run_dir .. "/artifacts"
-      local ok_art, out_art, code_art = run({
+      local _h_art, _err_art = child.spawn({
           "gh", "run", "download", run_id,
           "--repo", repo,
           "--dir", artifact_dir,
-        })
+        }, {stderr = 1})
+      local ok_art, out_art, code_art: boolean | string, string, number
+      if not _h_art then
+        ok_art = false
+        out_art = _err_art or "spawn failed"
+        code_art = -1
+      else
+        ok_art, out_art, code_art = _h_art:read()
+      end
       if ok_art then
         r["artifact_dir"] = artifact_dir
       else

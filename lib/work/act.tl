@@ -11,16 +11,6 @@ local child = require("cosmic.child")
 local cio = require("cosmic.io")
 local json = require("cosmic.json")
 
-local function run(argv: {string}): boolean | string, string, number
-  local h, err = child.spawn(argv, {
-      stderr = 1,
-    })
-  if not h then
-    return false, err or "spawn failed", -1
-  end
-  return h:read()
-end
-
 local function read_json(path: string): any, string
   local content = cio.slurp(path)
   if not content then
@@ -36,12 +26,16 @@ end
 local function comment_issue(repo: string, issue_number: number, body: string): boolean, string
   local tmp = os.tmpname()
   cio.barf(tmp, body)
-  local ok, out, code = run({
+  local _h_comment, _err_comment = child.spawn({
       "gh", "issue", "comment", tostring(issue_number),
       "--repo", repo,
       "--body-file", tmp,
-    })
+    }, {stderr = 1})
   os.remove(tmp)
+  if not _h_comment then
+    return false, "gh failed: " .. (_err_comment or "spawn failed")
+  end
+  local ok, out, code = _h_comment:read()
   if not ok then
     return false, "gh failed (exit " .. tostring(code) .. "): " .. (out or "")
   end
@@ -51,14 +45,18 @@ end
 local function create_pr(repo: string, branch: string, title: string, body: string): boolean, string
   local tmp = os.tmpname()
   cio.barf(tmp, body)
-  local ok, out, code = run({
+  local _h_pr, _err_pr = child.spawn({
       "gh", "pr", "create",
       "--repo", repo,
       "--head", branch,
       "--title", title,
       "--body-file", tmp,
-    })
+    }, {stderr = 1})
   os.remove(tmp)
+  if not _h_pr then
+    return false, "gh failed: " .. (_err_pr or "spawn failed")
+  end
+  local ok, out, code = _h_pr:read()
   if not ok then
     if out and out:find("already exists") then
       return true, nil
@@ -78,7 +76,11 @@ local function set_labels(repo: string, issue_number: number, add: {string}, rem
     table.insert(argv, "--remove-label")
     table.insert(argv, label)
   end
-  local ok, out, code = run(argv)
+  local _h_labels, _err_labels = child.spawn(argv, {stderr = 1})
+  if not _h_labels then
+    return false, "gh failed: " .. (_err_labels or "spawn failed")
+  end
+  local ok, out, code = _h_labels:read()
   if not ok then
     return false, "gh failed (exit " .. tostring(code) .. "): " .. (out or "")
   end

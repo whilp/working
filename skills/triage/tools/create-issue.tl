@@ -7,16 +7,6 @@ local child = require("cosmic.child")
 local cio = require("cosmic.io")
 local fs = require("cosmic.fs")
 
-local function run(argv: {string}): boolean | string, string, number
-  local h, err = child.spawn(argv, {
-      stderr = 1,
-    })
-  if not h then
-    return false, err or "spawn failed", -1
-  end
-  return h:read()
-end
-
 local repo = os.getenv("WORK_REPO") or ""
 
 return {
@@ -60,8 +50,12 @@ return {
       end
     end
 
-    local ok, out, code = run(argv)
+    local _h, _err = child.spawn(argv, {stderr = 1})
     fs.unlink(tmp)
+    if not _h then
+      return "error: gh failed: " .. (_err or "spawn failed")
+    end
+    local ok, out, code = _h:read()
 
     if not ok then
       return "error: gh failed (exit " .. tostring(code) .. "): " .. (out or "")
