@@ -38,7 +38,9 @@ previous check. Address those issues first, then continue with any remaining pla
    d. Commit with a descriptive message for that step.
 5. Run format and lint checks from `o/repo/AGENTS.md` (e.g. `make check-format`,
    `make format`). Fix any issues and amend the last commit.
-6. Run `cd o/repo && make ci` to validate all changes. Fix any failures and amend.
+6. Run `cd o/repo && make ci` to validate all changes. Use a 300s bash timeout
+   (`"timeout": 300000`) — some repos take over 2 minutes for a full CI run.
+   Fix any failures and amend.
 7. If validation requires fixes, stage and commit them.
 
 ## Forbidden

@@ -28,8 +28,10 @@ Read `o/plan/plan.md` for the plan. Read `o/do/do.md` for the execution summary.
    - For issues: `git -C o/repo diff origin/main...HEAD`
    - For PRs: review the full branch diff (`git -C o/repo diff origin/main...HEAD`)
      for context, but note that only new commits (since `o/repo/sha`) are in scope.
-2. Run `cd o/repo && make ci` to validate the changes. If it fails, the verdict
-   MUST be `needs-fixes` (unless the failure is unrelated to the changes).
+2. Run `cd o/repo && make ci` to validate the changes. Use a 300s bash timeout
+   (`"timeout": 300000`) — some repos take over 2 minutes for a full CI run.
+   If it fails, the verdict MUST be `needs-fixes` (unless the failure is
+   unrelated to the changes).
 3. Enforce scope limits:
    a. Extract the planned file list from `o/plan/plan.md`'s `## Files` section.
    b. List actual changed files. The diff range depends on the item type:
