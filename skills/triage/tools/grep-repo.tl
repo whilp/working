@@ -6,16 +6,6 @@
 
 local child = require("cosmic.child")
 
-local function run(argv: {string}): boolean | string, string, number
-  local h, err = child.spawn(argv, {
-      stderr = 1,
-    })
-  if not h then
-    return false, err or "spawn failed", -1
-  end
-  return h:read()
-end
-
 local repo_dir = "o/repo"
 
 return {
@@ -45,7 +35,7 @@ return {
       search_path = repo_dir .. "/" .. sub
     end
 
-    local ok, out, code = run({
+    local h, err = child.spawn({
         "grep", "-rn", "-E",
         "--include=*.tl",
         "--include=*.lua",
@@ -57,7 +47,11 @@ return {
         "--include=*.mk",
         "-e", pattern,
         search_path,
-      })
+      }, {stderr = 1})
+    if not h then
+      return "error: grep failed: " .. (err or "spawn failed")
+    end
+    local ok, out, code = h:read()
 
     if not ok then
       if code == 1 then

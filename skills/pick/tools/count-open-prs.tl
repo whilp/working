@@ -7,16 +7,6 @@
 local child = require("cosmic.child")
 local json = require("cosmic.json")
 
-local function run(argv: {string}): boolean | string, string, number
-  local h, err = child.spawn(argv, {
-      stderr = 1,
-    })
-  if not h then
-    return false, err or "spawn failed", -1
-  end
-  return h:read()
-end
-
 local QUERY = [[
 query($owner: String!, $name: String!) {
   repository(owner: $owner, name: $name) {
@@ -47,12 +37,16 @@ return {
 
     io.stderr:write("count_open_prs: querying " .. owner .. "/" .. name .. "\n")
 
-    local ok, out, code = run({
+    local h, err = child.spawn({
         "gh", "api", "graphql",
         "-f", "query=" .. QUERY,
         "-f", "owner=" .. owner,
         "-f", "name=" .. name,
-      })
+      }, {stderr = 1})
+    if not h then
+      return "error: gh failed: " .. (err or "spawn failed")
+    end
+    local ok, out, code = h:read()
     if not ok then
       if code == 4 then
         return "error: gh access denied (exit 4): " .. (out or "")

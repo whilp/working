@@ -8,16 +8,6 @@ local child = require("cosmic.child")
 local cio = require("cosmic.io")
 local fs = require("cosmic.fs")
 
-local function run(argv: {string}): boolean | string, string, number
-  local h, err = child.spawn(argv, {
-      stderr = 1,
-    })
-  if not h then
-    return false, err or "spawn failed", -1
-  end
-  return h:read()
-end
-
 local repo = os.getenv("WORK_REPO") or ""
 
 local function parse_issue_number(input: any, expected_repo: string): number, string
@@ -80,8 +70,12 @@ local tool = {
     local tmp = os.tmpname()
     cio.barf(tmp, body)
 
-    local ok, out, code = run({"gh", "issue", "comment", num, "--repo", repo, "--body-file", tmp})
+    local h, err = child.spawn({"gh", "issue", "comment", num, "--repo", repo, "--body-file", tmp}, {stderr = 1})
     fs.unlink(tmp)
+    if not h then
+      return "error: gh failed: " .. (err or "spawn failed")
+    end
+    local ok, out, code = h:read()
 
     if not ok then
       return "error: gh failed (exit " .. tostring(code) .. "): " .. (out or "")
