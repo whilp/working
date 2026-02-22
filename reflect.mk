@@ -42,7 +42,7 @@ $(fetch_done): $(ah) $(cosmic)
 	@echo "==> reflect: fetch runs $(SINCE)..$(UNTIL)"
 	# WORK_REPO is set inline, not globally — a global export would clobber
 	# work.mk's WORK_REPO := $(REPO) since reflect.mk is included second.
-	@WORK_REPO=$(REFLECT_REPO) timeout 300 $(ah) -n \
+	@WORK_REPO=$(REFLECT_REPO) $(run_ah) 300 $(ah) -n \
 		-m sonnet \
 		--skill reflect \
 		--must-produce $(fetch_done) \
@@ -75,7 +75,7 @@ analyze: $(analyze_done)
 $(reflection): $(analyze_done) $(ah)
 	@mkdir -p $(summarize_dir)
 	@echo "==> reflect: summarize"
-	@timeout 120 $(ah) -n \
+	@$(run_ah) 120 $(ah) -n \
 		-m sonnet \
 		--sandbox \
 		--skill reflect \
