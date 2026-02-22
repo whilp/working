@@ -7,9 +7,19 @@
 -- CLI: cosmic act.tl <issue_file> <actions_file> <output_file>
 -- reads WORK_REPO from environment.
 
+local child = require("cosmic.child")
 local cio = require("cosmic.io")
 local json = require("cosmic.json")
-local run = require("lib.gh.run")
+
+local function run(argv: {string}): boolean | string, string, number
+  local h, err = child.spawn(argv, {
+      stderr = 1,
+    })
+  if not h then
+    return false, err or "spawn failed", -1
+  end
+  return h:read()
+end
 
 local function read_json(path: string): any, string
   local content = cio.slurp(path)

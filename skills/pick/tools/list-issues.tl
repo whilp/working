@@ -4,8 +4,18 @@
 -- reads WORK_REPO from environment to limit scope.
 -- module tool: returns a Tool record for ah to load via -t
 
+local child = require("cosmic.child")
 local json = require("cosmic.json")
-local run = require("lib.gh.run")
+
+local function run(argv: {string}): boolean | string, string, number
+  local h, err = child.spawn(argv, {
+      stderr = 1,
+    })
+  if not h then
+    return false, err or "spawn failed", -1
+  end
+  return h:read()
+end
 
 local COLLABORATOR_ASSOCIATIONS: {string: boolean} = {
   OWNER = true,
