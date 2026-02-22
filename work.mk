@@ -209,7 +209,7 @@ check: $(check_done)
 $(check_done): $(push_done) $(plan) $(issue) $(ah)
 	@echo "==> check"
 	@mkdir -p $(check_dir)
-	@$(run_ah) 180 $(ah) -n \
+	@$(run_ah) 420 $(ah) -n \
 		-m sonnet \
 		--sandbox \
 		--skill check \
