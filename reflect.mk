@@ -64,7 +64,7 @@ analyze_done := $(analyze_dir)/done
 $(analyze_done): $(fetch_done) $(ah) $(cosmic)
 	@mkdir -p $(analyze_dir)
 	@echo "==> reflect: analyze runs"
-	@$(cosmic) skills/reflect/tools/analyze-runs.tl $(fetch_dir) $(analyze_dir) $(ah) || true
+	@$(cosmic) skills/reflect/lib/analyze-runs.tl $(fetch_dir) $(analyze_dir) $(ah) || true
 	@touch $@
 
 .PHONY: analyze

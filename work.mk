@@ -114,7 +114,8 @@ clone: $(repo_ready)
 $(build_log): $(repo_ready)
 	@mkdir -p $(@D)
 	@echo "==> build"
-	@cd $(repo_dir) && make ci >$(CURDIR)/$(build_log) 2>&1; \
+	@cd $(repo_dir) && make ci >$(CURDIR)/$(build_log) 2>&1 && \
+	 echo 0 > $(CURDIR)/$(build_log).exit || \
 	 echo $$? > $(CURDIR)/$(build_log).exit
 	@echo "  exit=$$(cat $(build_log).exit)"
 
