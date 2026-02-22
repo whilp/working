@@ -22,6 +22,8 @@ REPO ?=
 export PATH := $(CURDIR)/$(o)/bin:$(PATH)
 export WORK_REPO := $(REPO)
 
+run_ah := lib/work/run-ah.sh
+
 # target repo clone
 repo_dir := $(o)/repo
 default_branch = $(or $(shell git -C $(repo_dir) symbolic-ref refs/remotes/origin/HEAD 2>/dev/null | sed 's|refs/remotes/||'),origin/main)
@@ -54,7 +56,7 @@ LOOP ?= 1
 $(issue): $(ah) $(cosmic)
 	@mkdir -p $(pick_dir)
 	@echo "==> pick"
-	@timeout 120 $(ah) -n \
+	@$(run_ah) 120 $(ah) -n \
 		-m sonnet \
 		--skill pick \
 		--must-produce $(issue) \
@@ -145,7 +147,7 @@ plan: $(plan)
 $(plan): $(ci_log) $(repo_ready) $(issue) $(ah)
 	@echo "==> plan"
 	@mkdir -p $(plan_dir)
-	@timeout 180 $(ah) -n \
+	@$(run_ah) 180 $(ah) -n \
 		-m sonnet \
 		--sandbox \
 		--skill plan \
@@ -174,7 +176,7 @@ $(do_done): $(repo_ready) $(plan) $(feedback) $(issue) $(ah)
 		echo "  (retrying: resetting branch to $(default_branch))"; \
 		git -C $(repo_dir) reset --hard $(default_branch); \
 	fi
-	@timeout 300 $(ah) -n \
+	@$(run_ah) 300 $(ah) -n \
 		-m sonnet \
 		--sandbox \
 		--skill do \
@@ -207,7 +209,7 @@ check: $(check_done)
 $(check_done): $(push_done) $(plan) $(issue) $(ah)
 	@echo "==> check"
 	@mkdir -p $(check_dir)
-	@timeout 180 $(ah) -n \
+	@$(run_ah) 180 $(ah) -n \
 		-m sonnet \
 		--sandbox \
 		--skill check \
@@ -276,7 +278,7 @@ triage: $(triage_done)
 $(triage_done): $(triage_repo_ready) $(ah) $(cosmic)
 	@echo "==> triage"
 	@mkdir -p $(triage_dir)
-	@timeout 300 $(ah) -n \
+	@$(run_ah) 300 $(ah) -n \
 		-m sonnet \
 		--skill triage \
 		--must-produce $(triage_done) \
@@ -320,7 +322,7 @@ docs: $(docs_done)
 $(docs_done): $(docs_repo_ready) $(ah)
 	@echo "==> docs"
 	@mkdir -p $(docs_dir)
-	@timeout 300 $(ah) -n \
+	@$(run_ah) 300 $(ah) -n \
 		-m sonnet \
 		--sandbox \
 		--skill docs \
@@ -360,7 +362,7 @@ tests: $(tests_done)
 $(tests_done): $(tests_repo_ready) $(ah)
 	@echo "==> tests"
 	@mkdir -p $(tests_dir)
-	@timeout 300 $(ah) -n \
+	@$(run_ah) 300 $(ah) -n \
 		-m sonnet \
 		--sandbox \
 		--skill tests \
@@ -403,7 +405,7 @@ $(bump_done): $(bump_repo_ready) $(ah) $(cosmic)
 	@echo "==> bump"
 	@mkdir -p $(bump_dir)
 	@git -C $(repo_dir) checkout -B $(bump_branch)
-	@timeout 120 $(ah) -n \
+	@$(run_ah) 120 $(ah) -n \
 		-m sonnet \
 		--sandbox \
 		--skill bump \
