@@ -246,8 +246,7 @@ work: $(issue)
 	fi; \
 	$(MAKE) "REPO=$(REPO)" $(plan) || exit $$?; \
 	LOOP=1 $(converge) || true; \
-	LOOP=2 $(converge) || true; \
-	LOOP=3 $(converge)
+	LOOP=2 $(converge)
 
 # --- triage ---
 # standalone target: review open issues, close stale ones, split oversized ones.
