@@ -147,7 +147,7 @@ plan: $(plan)
 $(plan): $(ci_log) $(repo_ready) $(issue) $(ah)
 	@echo "==> plan"
 	@mkdir -p $(plan_dir)
-	@$(run_ah) 180 $(ah) -n \
+	@$(run_ah) 300 $(ah) -n \
 		-m sonnet \
 		--sandbox \
 		--skill plan \
