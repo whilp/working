@@ -3,8 +3,10 @@
 the system implements a PDCA (plan-do-check-act) loop for github issues and PR feedback. `make work` drives the full cycle:
 
 ```
-unstick → pick → clone → build → plan → do → push → check → act
+pick → clone → build → plan → do → push → check → act
 ```
+
+a separate daily workflow runs `make unstick` to reset issues stuck in `doing` for >24h back to `todo`, keeping the backlog available.
 
 pick prefers PRs with review feedback or failing CI checks over new issues. when a PR has `CHANGES_REQUESTED` status or failing checks, the pipeline addresses that. otherwise, it picks a new issue.
 
@@ -12,7 +14,7 @@ each phase is a make target with file-based dependencies. outputs go to `o/`.
 
 ## phases
 
-**unstick** — deterministic script (`lib/work/unstick.tl`). queries issues labeled `doing` via GraphQL, checks when the label was applied using timeline events, and resets any issue stuck in `doing` for >24h back to `todo` with a comment. runs before pick so stale issues become available for the work loop. writes `o/unstick/unstick.json`. no agent invocation.
+**unstick** — deterministic script (`lib/work/unstick.tl`). queries issues labeled `doing` via GraphQL, checks when the label was applied using timeline events, and resets any issue stuck in `doing` for >24h back to `todo` with a comment. runs daily in a separate scheduled workflow (`unstick.yml`), not as part of the work loop. writes `o/unstick/unstick.json`. no agent invocation.
 
 **pick** — selects the next work item. first checks for open PRs that need attention: `CHANGES_REQUESTED` review status or failing CI checks (excluding PRs labeled `needs-review`, which are waiting for the reviewer). if found, picks the oldest one. otherwise, selects one open `todo`-labeled issue. ensures labels exist, checks PR limits, picks by priority/age/clarity. transitions issues to `doing`. writes `o/pick/issue.json` with a `type` field (`"pr"` or `"issue"`) and, for PRs, a `reason` field indicating why it was selected.
 

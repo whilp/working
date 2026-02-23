@@ -75,7 +75,7 @@ when the app's permissions are changed in GitHub App settings, the installation 
 
 ```
 Makefile              build, test, ci targets; cosmic/ah dependency fetching
-work.mk               work loop targets (unstick → pick → clone → build → plan → do → push → check → act)
+work.mk               work loop targets (pick → clone → build → plan → do → push → check → act)
 reflect.mk            reflect loop targets (fetch → analyze → summarize → publish)
 lib/                  deterministic scripts (no agent invocation)
   build/              build-time utilities (lint)
@@ -112,6 +112,7 @@ skills/               agent skills and their tools
 .github/workflows/
   test.yml            CI: runs `make -j ci` on push/PR
   work.yml            scheduled work loop: runs `make work` hourly
+  unstick.yml         daily unstick: runs `make unstick` to reset stale doing issues
   reflect.yml         daily reflect loop: runs `make reflect`
   bump.yml            manual dependency bump: runs `make bump`
 ```

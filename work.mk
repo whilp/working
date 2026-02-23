@@ -1,10 +1,10 @@
 # work.mk: work targets
 #
 # implements the PDCA work loop as make targets:
-#   unstick -> pick -> clone -> build -> plan -> do -> push -> check -> act
+#   pick -> clone -> build -> plan -> do -> push -> check -> act
 #
-# unstick resets issues stuck in "doing" for >24h back to "todo" so the
-# work loop can pick them up again. runs before pick as a deterministic script.
+# unstick runs daily in a separate workflow to reset issues stuck in
+# "doing" for >24h back to "todo".
 #
 # pick prefers PRs with review feedback or failing CI checks over new issues.
 # when a PR with CHANGES_REQUESTED or failing checks is found, pick selects
@@ -57,7 +57,7 @@ LOOP ?= 1
 
 # --- unstick ---
 # reset issues stuck in "doing" for >24h back to "todo".
-# runs before pick so stale issues become available again.
+# runs daily in a separate workflow, not as part of the work loop.
 
 $(unstick_done): $(cosmic)
 	@mkdir -p $(unstick_dir)
@@ -70,7 +70,7 @@ unstick: $(unstick_done)
 # --- pick ---
 # preflight (labels, pr-limit), check for PRs with feedback, fetch issues, pick one, mark doing
 
-$(issue): $(unstick_done) $(ah) $(cosmic)
+$(issue): $(ah) $(cosmic)
 	@mkdir -p $(pick_dir)
 	@echo "==> pick"
 	@$(run_ah) 120 $(ah) -n \
