@@ -1,8 +1,10 @@
--- lib/work/unstick.tl: reset issues stuck in "doing" state
+-- lib/work/unstick.tl: reset stuck issues
 --
--- deterministic script that queries issues labeled "doing",
--- checks when the label was applied, and resets stale ones
--- (>24h) back to "todo" with a comment.
+-- deterministic script that:
+-- 1. queries issues labeled "doing", checks when the label was
+--    applied, and resets stale ones (>24h) back to "todo".
+-- 2. queries issues labeled "failed" that lack both "todo" and
+--    "doing", and adds "todo" so the work loop can pick them up.
 --
 -- CLI: cosmic unstick.tl <output_file>
 -- reads WORK_REPO from environment.
@@ -14,7 +16,7 @@ local json = require("cosmic.json")
 local STALE_HOURS = 24
 
 -- query issues labeled "doing" with their label timeline events
-local QUERY = [[
+local DOING_QUERY = [[
 query($owner: String!, $name: String!, $cursor: String) {
   repository(owner: $owner, name: $name) {
     issues(first: 100, after: $cursor, states: OPEN, labels: ["doing"]) {
@@ -30,6 +32,25 @@ query($owner: String!, $name: String!, $cursor: String) {
               label { name }
             }
           }
+        }
+      }
+    }
+  }
+}
+]]
+
+-- query issues labeled "failed" with their current labels
+local FAILED_QUERY = [[
+query($owner: String!, $name: String!, $cursor: String) {
+  repository(owner: $owner, name: $name) {
+    issues(first: 100, after: $cursor, states: OPEN, labels: ["failed"]) {
+      pageInfo { hasNextPage endCursor }
+      nodes {
+        number
+        title
+        url
+        labels(first: 20) {
+          nodes { name }
         }
       }
     }
@@ -76,7 +97,57 @@ local function fetch_doing_issues(owner: string, name: string): {any}, string
   for _ = 1, 10 do
     local argv: {string} = {
       "gh", "api", "graphql",
-      "-f", "query=" .. QUERY,
+      "-f", "query=" .. DOING_QUERY,
+      "-f", "owner=" .. owner,
+      "-f", "name=" .. name,
+    }
+    if has_cursor then
+      argv[#argv + 1] = "-f"
+      argv[#argv + 1] = "cursor=" .. cursor
+    end
+
+    local ok, out, code = run(argv)
+    if not ok then
+      if code == 4 then
+        return {}, "error: gh access denied (exit 4): " .. (out or "")
+      end
+      return {}, "error: gh failed (exit " .. tostring(code) .. "): " .. (out or "")
+    end
+
+    local resp = json.decode(out or "{}") as {string: any}
+    if not resp or not resp.data then
+      return {}, "error: failed to parse graphql response"
+    end
+
+    local data = resp.data as {string: any}
+    local repository = data.repository as {string: any}
+    local issues_conn = repository.issues as {string: any}
+    local nodes = issues_conn.nodes as {any}
+
+    for _, node_any in ipairs(nodes) do
+      all_issues[#all_issues + 1] = node_any
+    end
+
+    local page_info = issues_conn.pageInfo as {string: any}
+    if not (page_info.hasNextPage as boolean) then
+      break
+    end
+    cursor = page_info.endCursor as string
+    has_cursor = true
+  end
+
+  return all_issues, nil
+end
+
+local function fetch_failed_issues(owner: string, name: string): {any}, string
+  local all_issues: {any} = {}
+  local cursor: string = ""
+  local has_cursor = false
+
+  for _ = 1, 10 do
+    local argv: {string} = {
+      "gh", "api", "graphql",
+      "-f", "query=" .. FAILED_QUERY,
       "-f", "owner=" .. owner,
       "-f", "name=" .. name,
     }
@@ -237,15 +308,65 @@ local function execute(output_file: string): string
     end
   end
 
+  -- rescue failed-only issues: add "todo" to issues that have "failed"
+  -- but lack both "todo" and "doing"
+  local failed_issues, failed_err = fetch_failed_issues(owner, name)
+  if failed_err then
+    io.stderr:write(failed_err .. "\n")
+    failed_issues = {}
+  end
+
+  local rescued: {any} = {}
+
+  for _, node_any in ipairs(failed_issues) do
+    local node = node_any as {string: any}
+    local num = math.floor(node.number as number)
+    local title = node.title as string
+    local labels_conn = node.labels as {string: any}
+    local label_nodes = labels_conn.nodes as {any}
+
+    local has_todo = false
+    local has_doing = false
+    for _, lbl_any in ipairs(label_nodes) do
+      local lbl = lbl_any as {string: any}
+      local lname = lbl.name as string
+      if lname == "todo" then has_todo = true end
+      if lname == "doing" then has_doing = true end
+    end
+
+    if not has_todo and not has_doing then
+      local body = "Adding `todo`: issue had `failed` but no `todo` or `doing` label. "
+      .. "This allows the work loop to pick it up again."
+
+      local ok, err = comment_issue(repo, num, body)
+      if not ok then
+        io.stderr:write("comment #" .. tostring(num) .. " failed: " .. (err or "") .. "\n")
+      end
+
+      ok, err = set_labels(repo, num, {"todo"}, {})
+      if not ok then
+        io.stderr:write("labels #" .. tostring(num) .. " failed: " .. (err or "") .. "\n")
+      end
+
+      rescued[#rescued + 1] = {
+        number = num,
+        title = title,
+      }
+    end
+  end
+
   local result = json.encode({
       repo = repo,
       doing_count = #issues,
       reset_count = #reset,
       reset = reset,
+      rescued_count = #rescued,
+      rescued = rescued,
     })
 
   cio.barf(output_file, result)
   return "ok: reset " .. tostring(#reset) .. " of " .. tostring(#issues) .. " doing issues"
+  .. ", rescued " .. tostring(#rescued) .. " failed-only issues"
 end
 
 -- CLI entry point
