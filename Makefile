@@ -124,6 +124,7 @@ help:
 	@echo "  check-format        Check formatting on all .tl files"
 	@echo "  check-length        File length lint check (500-line default)"
 	@echo "  work                Run full work loop (pick -> plan -> do -> check -> act)"
+	@echo "  unstick             Reset stale doing issues to todo (REPO=owner/repo)"
 	@echo "  pick                Pick a work item: PR with feedback or issue (REPO=owner/repo)"
 	@echo "  clone               Clone repo and checkout work branch"
 	@echo "  plan                Research codebase and write a plan"

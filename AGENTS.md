@@ -79,7 +79,7 @@ work.mk               work loop targets (pick → clone → build → plan → d
 reflect.mk            reflect loop targets (fetch → analyze → summarize → publish)
 lib/                  deterministic scripts (no agent invocation)
   build/              build-time utilities (lint)
-  work/               work loop scripts (act)
+  work/               work loop scripts (act, unstick)
 tools/                shared tool modules (comment-issue, create-pr, set-issue-labels)
 test/                 tests for shared modules
   tools/              tests for shared tool modules
@@ -112,6 +112,7 @@ skills/               agent skills and their tools
 .github/workflows/
   test.yml            CI: runs `make -j ci` on push/PR
   work.yml            scheduled work loop: runs `make work` hourly
+  unstick.yml         daily unstick: runs `make unstick` to reset stale doing issues
   reflect.yml         daily reflect loop: runs `make reflect`
   bump.yml            manual dependency bump: runs `make bump`
 ```

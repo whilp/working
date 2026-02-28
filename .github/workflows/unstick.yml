@@ -1,0 +1,48 @@
+name: unstick
+
+on:
+  schedule:
+    - cron: '0 5 * * *'
+  workflow_dispatch:
+    inputs:
+      repo:
+        description: 'Target repository (owner/repo), or blank for all'
+        required: false
+
+jobs:
+  unstick:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    strategy:
+      fail-fast: false
+      matrix:
+        repo: ${{ inputs.repo && fromJson(format('["{0}"]', inputs.repo)) || fromJson('["whilp/ah","whilp/cosmic","whilp/working"]') }}
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+
+      - uses: actions/create-github-app-token@d72941d797fd3113feb6b93fd0dec494b13a2547 # v1
+        id: app-token
+        with:
+          app-id: ${{ secrets.APP_ID }}
+          private-key: ${{ secrets.APP_KEY }}
+          owner: ${{ github.repository_owner }}
+          repositories: ah,cosmic,working
+
+      # sanitize repo name for use in artifact names (GitHub rejects slashes)
+      - name: Set safe repo name
+        id: meta
+        run: echo "safe_repo=${REPO//\//-}" >> "$GITHUB_OUTPUT"
+        env:
+          REPO: ${{ matrix.repo }}
+
+      - name: Unstick
+        env:
+          REPO: ${{ matrix.repo }}
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
+        run: make unstick
+
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        if: always()
+        with:
+          name: unstick-${{ steps.meta.outputs.safe_repo || strategy.job-index }}
+          path: o/

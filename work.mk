@@ -3,6 +3,9 @@
 # implements the PDCA work loop as make targets:
 #   pick -> clone -> build -> plan -> do -> push -> check -> act
 #
+# unstick runs daily in a separate workflow to reset issues stuck in
+# "doing" for >24h back to "todo".
+#
 # pick prefers PRs with review feedback or failing CI checks over new issues.
 # when a PR with CHANGES_REQUESTED or failing checks is found, pick selects
 # it and the rest of the pipeline addresses the feedback. otherwise, pick
@@ -29,6 +32,8 @@ repo_dir := $(o)/repo
 default_branch = $(or $(shell git -C $(repo_dir) symbolic-ref refs/remotes/origin/HEAD 2>/dev/null | sed 's|refs/remotes/||'),origin/main)
 
 # named targets
+unstick_dir := $(o)/unstick
+unstick_done := $(unstick_dir)/unstick.json
 pick_dir := $(o)/pick
 issue := $(pick_dir)/issue.json
 build_log := $(o)/build/log.txt
@@ -49,6 +54,18 @@ act_done := $(o)/act.json
 # LOOP: set by the work target (1, 2, 3) to give each convergence
 # attempt its own session database. defaults to 1 for manual runs.
 LOOP ?= 1
+
+# --- unstick ---
+# reset issues stuck in "doing" for >24h back to "todo".
+# runs daily in a separate workflow, not as part of the work loop.
+
+$(unstick_done): $(cosmic)
+	@mkdir -p $(unstick_dir)
+	@echo "==> unstick"
+	@$(cosmic) lib/work/unstick.tl $(unstick_done)
+
+.PHONY: unstick
+unstick: $(unstick_done)
 
 # --- pick ---
 # preflight (labels, pr-limit), check for PRs with feedback, fetch issues, pick one, mark doing
