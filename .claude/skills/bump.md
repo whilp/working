@@ -1,1 +1,0 @@
-../../skills/bump/SKILL.md
