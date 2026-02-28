@@ -31,11 +31,12 @@ local function comment_issue(repo: string, issue_number: number, body: string): 
       "--repo", repo,
       "--body-file", tmp,
     }, {stderr = 1})
-  os.remove(tmp)
   if not h then
+    os.remove(tmp)
     return false, "gh failed: " .. (err or "spawn failed")
   end
   local ok, out, code = h:read()
+  os.remove(tmp)
   if not ok then
     return false, "gh failed (exit " .. tostring(code) .. "): " .. (out or "")
   end
@@ -52,11 +53,12 @@ local function create_pr(repo: string, branch: string, title: string, body: stri
       "--title", title,
       "--body-file", tmp,
     }, {stderr = 1})
-  os.remove(tmp)
   if not h then
+    os.remove(tmp)
     return false, "gh failed: " .. (err or "spawn failed")
   end
   local ok, out, code = h:read()
+  os.remove(tmp)
   if not ok then
     if out and out:find("already exists") then
       return true, nil
