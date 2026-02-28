@@ -12,6 +12,7 @@
 local child = require("cosmic.child")
 local cio = require("cosmic.io")
 local json = require("cosmic.json")
+local time = require("cosmic.time")
 
 local STALE_HOURS = 24
 
@@ -67,27 +68,7 @@ local function run(argv: {string}): boolean | string, string, number
   return ok, out, code
 end
 
--- parse ISO 8601 timestamp to unix epoch (UTC)
-local function parse_iso8601(s: string): number
-  local y, m, d, h, min, sec = s:match("(%d+)-(%d+)-(%d+)T(%d+):(%d+):(%d+)")
-  if not y then return 0 end
-  -- os.time interprets as local time; we need UTC.
-  -- compute offset and adjust.
-  local utc_t: os.DateTable = {
-    year = tonumber(y) as integer,
-    month = tonumber(m) as integer,
-    day = tonumber(d) as integer,
-    hour = tonumber(h) as integer,
-    min = tonumber(min) as integer,
-    sec = tonumber(sec) as integer,
-  }
-  local t = os.time(utc_t)
-  -- find the offset between local and UTC
-  local local_dt = os.date("*t", t) as os.DateTable
-  local utc_dt = os.date("!*t", t) as os.DateTable
-  local offset = os.time(local_dt) - os.time(utc_dt)
-  return t - offset
-end
+local parse_iso8601 = time.parse_iso8601
 
 local function fetch_doing_issues(owner: string, name: string): {any}, string
   local all_issues: {any} = {}
@@ -254,12 +235,7 @@ local function execute(output_file: string): string
     return fetch_err
   end
 
-  local now = os.time(os.date("!*t") as os.DateTable)
-  -- adjust for UTC offset (same approach as parse_iso8601)
-  local sample_local = os.date("*t", now) as os.DateTable
-  local sample_utc = os.date("!*t", now) as os.DateTable
-  local offset = os.time(sample_local) - os.time(sample_utc)
-  now = now - offset
+  local now = time.now()
 
   local stale_seconds = STALE_HOURS * 3600
   local reset: {any} = {}
