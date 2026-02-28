@@ -61,7 +61,7 @@ tl_all := $(wildcard tools/*.tl) $(wildcard skills/*/tools/*.tl) $(wildcard skil
 tl_tests := $(wildcard test/tools/test_*.tl) $(wildcard skills/*/tests/test_*.tl) $(wildcard lib/*/test_*.tl)
 tl_srcs := $(filter-out $(tl_tests),$(tl_all))
 
-TL_PATH := /zip/.tl/?.tl;/zip/.tl/?/init.tl;/zip/.lua/types/?.d.tl;/zip/.lua/types/?/init.d.tl
+TL_PATH := /zip/.lua/types/?.d.tl;/zip/.lua/types/?/init.d.tl
 TL_PATH_TEST := ?.tl;?/init.tl;$(TL_PATH)
 
 # type checking
