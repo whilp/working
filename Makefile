@@ -87,7 +87,7 @@ check-format: $(all_fmt_checks)
 	@$(cosmic) --report $(all_fmt_checks)
 
 # length checking (file length ratchet)
-all_files := $(shell git ls-files)
+all_files := $(shell git ls-files | while read f; do [ -f "$$f" ] && echo "$$f"; done)
 all_length_checks := $(patsubst %,$(o)/%.lint,$(all_files))
 
 $(o)/%.lint: % lib/build/lint.tl $(cosmic)
