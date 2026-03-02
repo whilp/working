@@ -40,11 +40,12 @@ return {
         "--title", title,
         "--body-file", tmp,
       }, {stderr = 1})
-    fs.unlink(tmp)
     if not h then
+      fs.unlink(tmp)
       return "error: gh failed: " .. (err or "spawn failed")
     end
     local ok, out, code = h:read()
+    fs.unlink(tmp)
 
     if not ok then
       if out and out:find("already exists") then

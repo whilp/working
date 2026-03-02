@@ -1,12 +1,12 @@
--- skills/reflect/tools/analyze-runs.tl: launch sandboxed agents to analyze workflow runs
+-- skills/reflect/lib/analyze-runs.tl: launch sandboxed agents to analyze workflow runs
 --
 -- reads manifest.json from the fetch directory. spawns one ah agent per run.
 -- each agent produces an analysis markdown file.
--- uses os.execute for incremental output in CI logs.
 --
--- usage: cosmic skills/reflect/tools/analyze-runs.tl <fetch_dir> <analyze_dir> <ah_path>
+-- usage: cosmic skills/reflect/lib/analyze-runs.tl <fetch_dir> <analyze_dir> <ah_path>
 
 local json = require("cosmic.json")
+local child = require("cosmic.child")
 local cio = require("cosmic.io")
 local fs = require("cosmic.fs")
 
@@ -44,11 +44,6 @@ end
 print("  " .. tostring(#runs) .. " runs to analyze")
 io.flush()
 
--- shell-escape a single argument
-local function quote(s: string): string
-  return "'" .. s:gsub("'", "'\\''") .. "'"
-end
-
 local failed = 0
 local skipped = 0
 for _, r in ipairs(runs) do
@@ -67,33 +62,35 @@ for _, r in ipairs(runs) do
     print("  -> " .. rid .. ": " .. wf .. " (" .. conclusion .. ")")
     io.flush()
 
-    -- write stdin to temp file for shell redirection
     local meta = json.encode(r)
-    local stdin_str = "PHASE=analyze-run RUN_DIR=" .. run_dir .. " RUN_META=" .. meta .. " OUTPUT_FILE=" .. out
-    local _, stdin_path = fs.mkstemp("/tmp/ah-stdin-XXXXXX")
-    cio.barf(stdin_path, stdin_str)
+    local stdin_str = "PHASE=analyze-run RUN_DIR=" .. run_dir
+    .. " RUN_META=" .. meta .. " OUTPUT_FILE=" .. out
 
-    -- run ah with inherited stdio for incremental output
     -- timeout 60s per run — these are sandboxed read-only analyses
-    local cmd = "timeout 60 " .. quote(ah)
-    .. " -n -m sonnet"
-    .. " --sandbox"
-    .. " --skill reflect"
-    .. " --must-produce " .. quote(out)
-    .. " --max-tokens 30000"
-    .. " --db " .. quote(analyze_dir .. "/session-" .. rid .. ".db")
-    .. " --unveil " .. quote(run_dir .. ":r")
-    .. " --unveil " .. quote(analyze_dir .. ":rwc")
-    .. " --unveil .:r"
-    .. " < " .. quote(stdin_path)
+    local h, err = child.spawn({
+        "timeout", "60", ah,
+        "-n", "-m", "sonnet",
+        "--sandbox",
+        "--skill", "reflect",
+        "--must-produce", out,
+        "--max-tokens", "30000",
+        "--db", analyze_dir .. "/session-" .. rid .. ".db",
+        "--unveil", run_dir .. ":r",
+        "--unveil", analyze_dir .. ":rwc",
+        "--unveil", ".:r",
+      }, {stdin = stdin_str, stderr = 1})
 
-    local ok, _, code = os.execute(cmd)
-    fs.unlink(stdin_path)
-
-    if not ok then
-      print("  !! " .. rid .. " failed (exit " .. tostring(code) .. ")")
+    if not h then
+      print("  !! " .. rid .. " spawn failed: " .. (err or ""))
       io.flush()
       failed = failed + 1
+    else
+      local ok, _, code = h:read()
+      if not ok then
+        print("  !! " .. rid .. " failed (exit " .. tostring(code) .. ")")
+        io.flush()
+        failed = failed + 1
+      end
     end
   end
 end

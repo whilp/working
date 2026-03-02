@@ -51,11 +51,12 @@ return {
     end
 
     local h, err = child.spawn(argv, {stderr = 1})
-    fs.unlink(tmp)
     if not h then
+      fs.unlink(tmp)
       return "error: gh failed: " .. (err or "spawn failed")
     end
     local ok, out, code = h:read()
+    fs.unlink(tmp)
 
     if not ok then
       return "error: gh failed (exit " .. tostring(code) .. "): " .. (out or "")
