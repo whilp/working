@@ -303,14 +303,16 @@ local function execute(output_file: string): string
 
     local has_todo = false
     local has_doing = false
+    local has_done = false
     for _, lbl_any in ipairs(label_nodes) do
       local lbl = lbl_any as {string: any}
       local lname = lbl.name as string
       if lname == "todo" then has_todo = true end
       if lname == "doing" then has_doing = true end
+      if lname == "done" then has_done = true end
     end
 
-    if not has_todo and not has_doing then
+    if not has_todo and not has_doing and not has_done then
       local body = "Adding `todo`: issue had `failed` but no `todo` or `doing` label. "
       .. "This allows the work loop to pick it up again."
 

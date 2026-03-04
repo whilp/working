@@ -1,6 +1,7 @@
 -- skills/pick/tools/list-issues.tl: fetch open issues from a github repo
 --
--- returns issues that are either labeled "todo" or filed by repo collaborators.
+-- returns issues that are either labeled "todo" or filed by repo collaborators,
+-- excluding any issue that has done, doing, or failed labels.
 -- reads WORK_REPO from environment to limit scope.
 -- module tool: returns a Tool record for ah to load via -t
 
@@ -37,7 +38,7 @@ local repo = os.getenv("WORK_REPO") or ""
 
 return {
   name = "list_issues",
-  description = "Fetch open issues from the target repository (set by WORK_REPO) that are either labeled 'todo' or filed by repo collaborators (owner/member/collaborator).",
+  description = "Fetch open issues from the target repository (set by WORK_REPO) that are either labeled 'todo' or filed by repo collaborators (owner/member/collaborator). Excludes issues with done, doing, or failed labels.",
   input_schema = {
     type = "object",
     properties = {},
@@ -100,8 +101,9 @@ return {
         local labels_conn = node.labels as {string: any}
         local label_nodes = labels_conn.nodes as {any}
 
-        -- check if issue has todo label
+        -- check labels: todo makes it eligible, done/doing/failed exclude it
         local has_todo = false
+        local has_terminal = false
         local label_list: {any} = {}
         for _, ln_any in ipairs(label_nodes) do
           local ln = ln_any as {string: any}
@@ -109,14 +111,19 @@ return {
           label_list[#label_list + 1] = {name = lname}
           if lname == "todo" then
             has_todo = true
+          elseif lname == "done" or lname == "doing" or lname == "failed" then
+            has_terminal = true
           end
         end
 
+        -- skip issues already in a work state (done, doing, failed)
         -- check if author is a collaborator
         local assoc = node.authorAssociation as string
         local is_collaborator = COLLABORATOR_ASSOCIATIONS[assoc] or false
 
-        if has_todo or is_collaborator then
+        if has_terminal then
+          -- do nothing: skip this issue
+        elseif has_todo or is_collaborator then
           local author_obj = node.author as {string: any}
           all_issues[#all_issues + 1] = {
             number = node.number,
