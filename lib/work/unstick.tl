@@ -3,8 +3,12 @@
 -- deterministic script that:
 -- 1. queries issues labeled "doing", checks when the label was
 --    applied, and resets stale ones (>24h) back to "todo".
+--    if an issue has been reset too many times (doing label applied
+--    MAX_RESETS+1 or more times), it is marked "failed" instead to
+--    break infinite pick-fail-unstick loops.
 -- 2. queries issues labeled "failed" that lack both "todo" and
 --    "doing", and adds "todo" so the work loop can pick them up.
+--    issues just marked "failed" by step 1 are excluded.
 --
 -- CLI: cosmic unstick.tl <output_file>
 -- reads WORK_REPO from environment.
@@ -15,6 +19,7 @@ local json = require("cosmic.json")
 local time = require("cosmic.time")
 
 local STALE_HOURS = 24
+local MAX_RESETS = 3
 
 -- query issues labeled "doing" with their label timeline events
 local DOING_QUERY = [[
@@ -187,6 +192,20 @@ local function find_doing_labeled_at(node: {string: any}): string
   return latest
 end
 
+local function count_doing_labels(node: {string: any}): number
+  local timeline = node.timelineItems as {string: any}
+  local tl_nodes = timeline.nodes as {any}
+  local count = 0
+  for _, ev_any in ipairs(tl_nodes) do
+    local ev = ev_any as {string: any}
+    local label = ev.label as {string: any}
+    if label and (label.name as string) == "doing" then
+      count = count + 1
+    end
+  end
+  return count
+end
+
 local function comment_issue(repo: string, issue_number: number, body: string): boolean, string
   local tmp = os.tmpname()
   cio.barf(tmp, body)
@@ -239,6 +258,8 @@ local function execute(output_file: string): string
 
   local stale_seconds = STALE_HOURS * 3600
   local reset: {any} = {}
+  local failed: {any} = {}
+  local just_failed: {number: boolean} = {}
 
   for _, node_any in ipairs(issues) do
     local node = node_any as {string: any}
@@ -261,31 +282,67 @@ local function execute(output_file: string): string
 
     if age_seconds > stale_seconds then
       local hours = math.floor(age_seconds / 3600)
-      local body = "Resetting from `doing` to `todo`: issue has been in `doing` state for "
-      .. tostring(hours) .. "h (threshold: " .. tostring(STALE_HOURS) .. "h). "
-      .. "This allows the work loop to pick it up again."
+      local doing_count = count_doing_labels(node)
+      -- doing_count tracks how many times the "doing" label was applied.
+      -- each pick-fail-unstick cycle adds one. if the count exceeds
+      -- MAX_RESETS, the issue is stuck in a loop and should be failed.
+      local past_resets = doing_count - 1 -- current "doing" doesn't count as a reset
+      if past_resets < 0 then past_resets = 0 end
 
-      local ok, err = comment_issue(repo, num, body)
-      if not ok then
-        io.stderr:write("comment #" .. tostring(num) .. " failed: " .. (err or "") .. "\n")
+      if past_resets >= MAX_RESETS then
+        -- too many resets: mark as failed to break the loop
+        local body = "Marking as `failed`: issue has been reset from `doing` "
+        .. tostring(past_resets) .. " time(s) (limit: " .. tostring(MAX_RESETS) .. "). "
+        .. "The work loop cannot complete this issue. "
+        .. "Remove `failed` and add `todo` to retry manually."
+
+        local ok, err = comment_issue(repo, num, body)
+        if not ok then
+          io.stderr:write("comment #" .. tostring(num) .. " failed: " .. (err or "") .. "\n")
+        end
+
+        ok, err = set_labels(repo, num, {"failed"}, {"doing"})
+        if not ok then
+          io.stderr:write("labels #" .. tostring(num) .. " failed: " .. (err or "") .. "\n")
+        end
+
+        just_failed[num] = true
+        failed[#failed + 1] = {
+          number = num,
+          title = title,
+          labeled_at = labeled_at,
+          age_hours = hours,
+          doing_count = doing_count,
+        }
+      else
+        local body = "Resetting from `doing` to `todo`: issue has been in `doing` state for "
+        .. tostring(hours) .. "h (threshold: " .. tostring(STALE_HOURS) .. "h). "
+        .. "This allows the work loop to pick it up again."
+
+        local ok, err = comment_issue(repo, num, body)
+        if not ok then
+          io.stderr:write("comment #" .. tostring(num) .. " failed: " .. (err or "") .. "\n")
+        end
+
+        ok, err = set_labels(repo, num, {"todo"}, {"doing"})
+        if not ok then
+          io.stderr:write("labels #" .. tostring(num) .. " failed: " .. (err or "") .. "\n")
+        end
+
+        reset[#reset + 1] = {
+          number = num,
+          title = title,
+          labeled_at = labeled_at,
+          age_hours = hours,
+          doing_count = doing_count,
+        }
       end
-
-      ok, err = set_labels(repo, num, {"todo"}, {"doing"})
-      if not ok then
-        io.stderr:write("labels #" .. tostring(num) .. " failed: " .. (err or "") .. "\n")
-      end
-
-      reset[#reset + 1] = {
-        number = num,
-        title = title,
-        labeled_at = labeled_at,
-        age_hours = hours,
-      }
     end
   end
 
   -- rescue failed-only issues: add "todo" to issues that have "failed"
-  -- but lack both "todo" and "doing"
+  -- but lack both "todo" and "doing".
+  -- skip issues just marked "failed" above to avoid undoing the escalation.
   local failed_issues, failed_err = fetch_failed_issues(owner, name)
   if failed_err then
     io.stderr:write(failed_err .. "\n")
@@ -298,6 +355,12 @@ local function execute(output_file: string): string
     local node = node_any as {string: any}
     local num = math.floor(node.number as number)
     local title = node.title as string
+
+    -- skip issues we just escalated to "failed" in this run
+    if just_failed[num] then
+      goto continue
+    end
+
     local labels_conn = node.labels as {string: any}
     local label_nodes = labels_conn.nodes as {any}
 
@@ -331,6 +394,8 @@ local function execute(output_file: string): string
         title = title,
       }
     end
+
+    ::continue::
   end
 
   local result = json.encode({
@@ -338,12 +403,15 @@ local function execute(output_file: string): string
       doing_count = #issues,
       reset_count = #reset,
       reset = reset,
+      failed_count = #failed,
+      failed = failed,
       rescued_count = #rescued,
       rescued = rescued,
     })
 
   cio.barf(output_file, result)
   return "ok: reset " .. tostring(#reset) .. " of " .. tostring(#issues) .. " doing issues"
+  .. ", failed " .. tostring(#failed)
   .. ", rescued " .. tostring(#rescued) .. " failed-only issues"
 end
 
@@ -366,5 +434,7 @@ return {
   execute = execute,
   parse_iso8601 = parse_iso8601,
   find_doing_labeled_at = find_doing_labeled_at,
+  count_doing_labels = count_doing_labels,
   STALE_HOURS = STALE_HOURS,
+  MAX_RESETS = MAX_RESETS,
 }
