@@ -13,7 +13,10 @@ local function test_exports()
   assert(type(unstick.parse_iso8601) == "function", "parse_iso8601 should be a function")
   assert(unstick.find_doing_labeled_at, "should export find_doing_labeled_at function")
   assert(type(unstick.find_doing_labeled_at) == "function", "find_doing_labeled_at should be a function")
+  assert(unstick.count_doing_labels, "should export count_doing_labels function")
+  assert(type(unstick.count_doing_labels) == "function", "count_doing_labels should be a function")
   assert(unstick.STALE_HOURS == 24, "STALE_HOURS should be 24")
+  assert(unstick.MAX_RESETS == 3, "MAX_RESETS should be 3")
   print("✓ unstick.tl exports expected functions and constants")
 end
 test_exports()
@@ -86,6 +89,49 @@ local function test_find_doing_labeled_at_empty()
   print("✓ find_doing_labeled_at returns empty for empty timeline")
 end
 test_find_doing_labeled_at_empty()
+
+local function test_count_doing_labels()
+  local node = {
+    timelineItems = {
+      nodes = {
+        {createdAt = "2025-01-01T10:00:00Z", label = {name = "doing"}},
+        {createdAt = "2025-01-02T10:00:00Z", label = {name = "doing"}},
+        {createdAt = "2025-01-01T15:00:00Z", label = {name = "todo"}},
+        {createdAt = "2025-01-03T10:00:00Z", label = {name = "doing"}},
+      },
+    },
+  }
+  local count = unstick.count_doing_labels(node as {string: any})
+  assert(count == 3, "should count 3 doing labels, got " .. tostring(count))
+  print("✓ count_doing_labels counts doing labels correctly")
+end
+test_count_doing_labels()
+
+local function test_count_doing_labels_none()
+  local node = {
+    timelineItems = {
+      nodes = {
+        {createdAt = "2025-01-01T10:00:00Z", label = {name = "todo"}},
+      },
+    },
+  }
+  local count = unstick.count_doing_labels(node as {string: any})
+  assert(count == 0, "should count 0 doing labels, got " .. tostring(count))
+  print("✓ count_doing_labels returns 0 when no doing labels")
+end
+test_count_doing_labels_none()
+
+local function test_count_doing_labels_empty()
+  local node = {
+    timelineItems = {
+      nodes = {},
+    },
+  }
+  local count = unstick.count_doing_labels(node as {string: any})
+  assert(count == 0, "should count 0 for empty timeline, got " .. tostring(count))
+  print("✓ count_doing_labels returns 0 for empty timeline")
+end
+test_count_doing_labels_empty()
 
 local function test_cli_missing_args()
   local ok = os.execute("cosmic lib/work/unstick.tl 2>/dev/null")
