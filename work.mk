@@ -186,14 +186,14 @@ $(feedback): $(plan)
 .PHONY: do
 do: $(do_done)
 
-$(do_done): $(repo_ready) $(plan) $(feedback) $(issue) $(ah)
+$(do_done): $(repo_ready) $(plan) $(feedback) $(issue) $(ah) $(cosmic)
 	@echo "==> do"
 	@mkdir -p $(do_dir)
 	@if [ "$(item_type)" != "pr" ] && ! git -C $(repo_dir) diff --quiet $(default_branch)..HEAD 2>/dev/null; then \
 		echo "  (retrying: resetting branch to $(default_branch))"; \
 		git -C $(repo_dir) reset --hard $(default_branch); \
 	fi
-	@$(run_ah) 300 $(ah) -n \
+	@rc=0; $(run_ah) 420 $(ah) -n \
 		-m sonnet \
 		--sandbox \
 		--skill do \
@@ -205,7 +205,15 @@ $(do_done): $(repo_ready) $(plan) $(feedback) $(issue) $(ah)
 		--unveil $(plan_dir):r \
 		--unveil $(o)/build:r \
 		--unveil .:r \
-		< $(issue)
+		< $(issue) || rc=$$?; \
+	if [ "$$rc" -eq 124 ] && [ -f $(do_dir)/session-$(LOOP).db ]; then \
+		echo "  extracting timeout notes from session"; \
+		$(cosmic) lib/work/extract-do-notes.tl \
+			$(do_dir)/session-$(LOOP).db \
+			$(repo_dir) \
+			$(feedback); \
+	fi; \
+	[ "$$rc" -eq 0 ]
 	@touch $@
 
 # --- push ---
