@@ -7,6 +7,7 @@ MAKEFLAGS += --no-print-directory
 MAKEFLAGS += --no-builtin-rules
 MAKEFLAGS += --no-builtin-variables
 MAKEFLAGS += --output-sync
+MAKEFLAGS += -j$(shell nproc 2>/dev/null || sysctl -n hw.ncpu 2>/dev/null || echo 2)
 export COSMIC_NO_WELCOME = 1
 
 o := o
@@ -61,15 +62,14 @@ tl_all := $(wildcard tools/*.tl) $(wildcard skills/*/tools/*.tl) $(wildcard skil
 tl_tests := $(wildcard test/tools/test_*.tl) $(wildcard skills/*/tests/test_*.tl) $(wildcard lib/*/test_*.tl)
 tl_srcs := $(filter-out $(tl_tests),$(tl_all))
 
-TL_PATH := /zip/.tl/?.tl;/zip/.tl/?/init.tl;/zip/.lua/types/?.d.tl;/zip/.lua/types/?/init.d.tl
-TL_PATH_TEST := ?.tl;?/init.tl;$(TL_PATH)
+TL_PATH_TEST := ?.tl;?/init.tl;/zip/.tl/?.tl;/zip/.tl/?/init.tl;/zip/.lua/types/?.d.tl;/zip/.lua/types/?/init.d.tl
 
 # type checking
 all_type_checks := $(patsubst %,$(o)/%.types,$(tl_srcs))
 
 $(o)/%.tl.types: %.tl $(cosmic)
 	@mkdir -p $(@D)
-	-@TL_PATH='$(TL_PATH)' $(cosmic) --test $@ $(cosmic) --check-types $<
+	-@$(cosmic) --test $@ $(cosmic) --check-types $<
 
 .PHONY: check-types
 check-types: $(all_type_checks)
