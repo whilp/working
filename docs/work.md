@@ -24,7 +24,7 @@ each phase is a make target with file-based dependencies. outputs go to `o/`.
 
 **plan** — reads the repo and work item, writes a step-by-step plan to `o/plan/plan.md`. for PRs, the plan addresses each piece of review feedback. for issues, the plan covers the implementation. research only, no source changes.
 
-**do** — executes the plan in `o/repo/`. makes changes, runs validation, commits. writes `o/do/do.md`.
+**do** — executes the plan in `o/repo/`. makes changes, runs validation, commits. writes `o/do/do.md`. on timeout, extracts learnings from the session database (errors encountered, key observations, uncommitted changes) into `o/do/feedback.md` so the next attempt can continue efficiently.
 
 **push** — pushes the feature branch to origin.
 
@@ -35,6 +35,8 @@ each phase is a make target with file-based dependencies. outputs go to `o/`.
 ## convergence
 
 when check writes `needs-fixes`, it also writes `o/do/feedback.md`. since do depends on feedback.md, the next make run re-executes do → push → check. `make work` retries up to 3 times.
+
+when do times out, `lib/work/extract-do-notes.lua` extracts learnings from the session database (assistant observations, tool errors, uncommitted diffs) into `o/do/feedback.md`. the LOOP=2 retry reads these notes and can build on the previous attempt's progress instead of starting from scratch.
 
 ## agent invocation
 

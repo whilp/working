@@ -23,8 +23,10 @@ conventions, and build instructions for the target repository. Follow its guidan
 
 Read `o/plan/plan.md` for the full plan.
 
-Read `o/do/feedback.md` — if non-empty, it contains review feedback from a
-previous check. Address those issues first, then continue with any remaining plan steps.
+Read `o/do/feedback.md` — if non-empty, it contains notes from a previous attempt.
+This may be review feedback from a check phase, or timeout notes from a timed-out
+do attempt (with errors encountered, key observations, and uncommitted changes).
+Address those issues first, then continue with any remaining plan steps.
 
 ## Instructions
 

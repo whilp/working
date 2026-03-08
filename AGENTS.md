@@ -79,7 +79,7 @@ work.mk               work loop targets (pick → clone → build → plan → d
 reflect.mk            reflect loop targets (fetch → analyze → summarize → publish)
 lib/                  deterministic scripts (no agent invocation)
   build/              build-time utilities (lint)
-  work/               work loop scripts (act, unstick)
+  work/               work loop scripts (act, unstick, extract-do-notes)
 tools/                shared tool modules (comment-issue, create-pr, set-issue-labels)
 test/                 tests for shared modules
   tools/              tests for shared tool modules
