@@ -1,2 +1,2 @@
-ah_url := https://github.com/whilp/ah/releases/download/2026-03-01-a229baa/ah
-ah_sha := 67d9e7e249380fb3dd42a5f734f14c07d3f95f612ee60e2574e38229dde9653a
+ah_url := https://github.com/whilp/ah/releases/download/2026-03-08-be343f9/ah
+ah_sha := f32eb467f78ce31021f12a6787e0290525fd20ed97b2dc404f78bc78f54c459e
