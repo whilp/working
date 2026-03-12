@@ -262,8 +262,12 @@ $(act_done): $(check_done) $(issue) $(cosmic)
 converge := $(MAKE) "REPO=$(REPO)" $(act_done)
 work: $(issue)
 	@error=$$(jq -r '.error // empty' $(issue)); \
-	if [ "$$error" = "pr_limit" ] || [ "$$error" = "no_issues" ]; then \
+	if [ "$$error" = "pr_limit" ]; then \
 		echo "==> skip: $$error"; \
+		exit 0; \
+	elif [ "$$error" = "no_issues" ]; then \
+		echo "==> no issues: running triage"; \
+		$(MAKE) "REPO=$(REPO)" triage; \
 		exit 0; \
 	elif [ -n "$$error" ]; then \
 		echo "==> error: $$error"; \
