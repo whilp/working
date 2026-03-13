@@ -138,12 +138,17 @@ help:
 	@echo "  fetch               Fetch workflow run logs and artifacts"
 	@echo "  analyze             Analyze fetched data into reflection.md"
 	@echo "  publish             Commit reflection.md and open PR"
+	@echo "  autowork            Run autowork loop (propose -> apply -> eval -> decide)"
+	@echo "  eval                Run eval suite on current ah (AH_REPO=owner/repo)"
+	@echo "  baseline            Run eval and record baseline score"
+	@echo "  propose             Propose a change to ah"
 	@echo "  ah                  Fetch ah binary"
 	@echo "  cosmic              Fetch cosmic binary"
 	@echo "  clean               Remove all build artifacts"
 
 include work.mk
 include reflect.mk
+include autowork.mk
 
 .PHONY: clean
 clean:

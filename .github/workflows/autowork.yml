@@ -1,0 +1,46 @@
+name: autowork
+
+on:
+  workflow_dispatch:
+    inputs:
+      ah_repo:
+        description: 'Target ah repository (owner/repo)'
+        required: false
+        default: 'whilp/ah'
+
+env:
+  GIT_AUTHOR_NAME: ${{ github.actor }}
+  GIT_AUTHOR_EMAIL: ${{ github.actor }}@users.noreply.github.com
+  GIT_COMMITTER_NAME: ${{ github.actor }}
+  GIT_COMMITTER_EMAIL: ${{ github.actor }}@users.noreply.github.com
+
+jobs:
+  autowork:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    concurrency:
+      group: autowork
+      cancel-in-progress: false
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+
+      - uses: actions/create-github-app-token@d72941d797fd3113feb6b93fd0dec494b13a2547 # v1
+        id: app-token
+        with:
+          app-id: ${{ secrets.APP_ID }}
+          private-key: ${{ secrets.APP_KEY }}
+          owner: ${{ github.repository_owner }}
+          repositories: ah,cosmic,working
+
+      - name: Autowork
+        env:
+          AH_REPO: ${{ inputs.ah_repo || 'whilp/ah' }}
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
+          CLAUDE_CODE_OAUTH_TOKEN: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+        run: make autowork
+
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        if: always()
+        with:
+          name: autowork
+          path: o/autowork/

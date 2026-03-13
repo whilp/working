@@ -47,7 +47,17 @@ DATE=2025-01-15 make reflect
 REPO=whilp/working make bump
 ```
 
-the work workflow runs hourly. the reflect workflow runs daily at 06:00 UTC. both support manual dispatch.
+```bash
+# run autowork loop (propose -> eval -> decide for ah)
+AH_REPO=whilp/ah make autowork
+
+# run individual autowork phases
+AH_REPO=whilp/ah make eval
+AH_REPO=whilp/ah make baseline
+AH_REPO=whilp/ah make propose
+```
+
+the work workflow runs hourly. the reflect workflow runs daily at 06:00 UTC. the autowork workflow supports manual dispatch. all support manual dispatch.
 
 ## setup
 
@@ -77,9 +87,11 @@ when the app's permissions are changed in GitHub App settings, the installation 
 Makefile              build, test, ci targets; cosmic/ah dependency fetching
 work.mk               work loop targets (pick → clone → build → plan → do → push → check → act)
 reflect.mk            reflect loop targets (fetch → analyze → summarize → publish)
+autowork.mk           autowork loop targets (baseline → propose → apply → eval → decide)
 lib/                  deterministic scripts (no agent invocation)
   build/              build-time utilities (lint)
   work/               work loop scripts (act, unstick, extract-do-notes)
+  eval/               eval scoring, decision, and aggregation modules
 tools/                shared tool modules (comment-issue, create-pr, set-issue-labels)
 test/                 tests for shared modules
   tools/              tests for shared tool modules
@@ -109,12 +121,20 @@ skills/               agent skills and their tools
     SKILL.md          bump skill prompt
     tools/            tl tool modules (get-latest-release, update-dep)
     tests/            tests for bump tools
+  autowork/           propose improvements to ah based on eval results
+    SKILL.md          autowork proposal skill prompt
+    tools/            tl tool modules (get-eval-results, record-result)
+    tests/            tests for autowork tools
+eval/                 eval infrastructure (immutable contract)
+  judge.md            judge rubric prompt for scoring agent work
+  tasks/              eval task definitions (prompt.md, expect.md, repo.bundle)
 .github/workflows/
   test.yml            CI: runs `make -j ci` on push/PR
   work.yml            scheduled work loop: runs `make work` hourly
   unstick.yml         daily unstick: runs `make unstick` to reset stale doing issues
   reflect.yml         daily reflect loop: runs `make reflect`
   bump.yml            manual dependency bump: runs `make bump`
+  autowork.yml        manual autowork loop: runs `make autowork`
 ```
 
 ## docs
@@ -123,6 +143,8 @@ skills/               agent skills and their tools
 - `docs/work.md` — work loop design, convergence, tools
 - `docs/reflect.md` — reflect loop design, phases, tools
 - `docs/conventions.md` — teal patterns, testing, naming, commit format
+- `docs/autowork.md` — autowork loop design, eval harness, keep/discard ratchet
+- `docs/autowork-detail.md` — overfitting defenses, judge rubric, nonfunctional requirements
 
 ## making changes
 
@@ -130,6 +152,6 @@ skills/               agent skills and their tools
 2. read the relevant skill SKILL.md and tool .tl files before editing.
 3. every tool .tl file must have a corresponding test_*.tl file. tests live in a separate `tests/` subdirectory (`test/tools/` for shared tools, `skills/NAME/tests/` for skill tools) — not alongside the tool source. `ah` loads all `.tl` files in `tools/` directories as tools; keeping tests separate prevents them from being registered as tools.
 4. run `make ci` before committing. all checks must pass.
-5. use `component: action` format for commit messages and PR titles (e.g. `pick: add priority sorting`, `docs: update setup instructions`). lowercase, imperative. common components: skill names (`pick`, `plan`, `do`, `check`, `act`, `reflect`, `triage`, `bump`), `docs`, `ci`, `tools`.
+5. use `component: action` format for commit messages and PR titles (e.g. `pick: add priority sorting`, `docs: update setup instructions`). lowercase, imperative. common components: skill names (`pick`, `plan`, `do`, `check`, `act`, `reflect`, `triage`, `bump`, `autowork`), `docs`, `ci`, `tools`.
 6. tool modules return a table with `name`, `description`, `input_schema`, `execute`.
 7. tests validate tool record structure and input validation (no external calls).
