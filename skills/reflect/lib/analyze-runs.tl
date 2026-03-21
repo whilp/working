@@ -73,7 +73,7 @@ for _, r in ipairs(runs) do
         "--sandbox",
         "--skill", "reflect",
         "--must-produce", out,
-        "--max-tokens", "30000",
+        "--max-tokens", "80000",
         "--db", analyze_dir .. "/session-" .. rid .. ".db",
         "--unveil", run_dir .. ":r",
         "--unveil", analyze_dir .. ":rwc",

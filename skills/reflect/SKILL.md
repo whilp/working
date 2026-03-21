@@ -54,12 +54,13 @@ Analyze a single workflow run. You are sandboxed with no network access.
 ### Instructions
 
 1. Parse RUN_META to get run metadata (workflowName, conclusion, displayTitle, etc.).
-2. Read `RUN_DIR/log.txt`. Focus on:
-   - error lines, failure messages, exit codes
-   - phase transitions (==> pick, ==> plan, etc.)
-   - timing (how long each phase took)
-   - key outcomes (issue picked, verdict, PR created)
-3. Check `RUN_DIR/artifacts/` for structured data:
+2. Analyze `RUN_DIR/log.txt` efficiently — **do not read the full log**. Logs are large (~100KB). Use targeted commands:
+   - `grep -n "==>" RUN_DIR/log.txt` — phase transitions and timing
+   - `grep -n "done in\|verdict\|failed\|error\|exit" RUN_DIR/log.txt` — outcomes and errors
+   - `grep -n "no_issues\|pr_limit\|issue.json" RUN_DIR/log.txt` — pick results
+   - `head -30 RUN_DIR/log.txt` and `tail -30 RUN_DIR/log.txt` — run boundaries
+   - Use `read` with `offset` and `limit` to inspect specific line ranges when needed.
+3. Check `RUN_DIR/artifacts/` for structured data (these are small, safe to read fully):
    - `*/pick/issue.json` — which issue was picked
    - `*/pick/reasoning.md` — why it was picked
    - `*/plan/plan.md` — what was planned
