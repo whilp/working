@@ -23,9 +23,9 @@ jobs:
       group: reflect
       cancel-in-progress: false
     steps:
-      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
 
-      - uses: actions/create-github-app-token@d72941d797fd3113feb6b93fd0dec494b13a2547 # v1
+      - uses: actions/create-github-app-token@f8d387b68d61c58ab83c6c016672934102569859 # v3
         id: app-token
         with:
           app-id: ${{ secrets.APP_ID }}
@@ -39,7 +39,7 @@ jobs:
           CLAUDE_CODE_OAUTH_TOKEN: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
         run: make -j ${{ inputs.date && format('DATE={0}', inputs.date) || '' }} reflect
 
-      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+      - uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7
         if: always()
         with:
           name: reflect
