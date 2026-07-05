@@ -1,8 +1,9 @@
 name: reflect
 
 on:
-  schedule:
-    - cron: '0 6 * * *'
+  # scheduled runs disabled; trigger manually via workflow_dispatch
+  # schedule:
+  #   - cron: '0 6 * * *'
   workflow_dispatch:
     inputs:
       date:
