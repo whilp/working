@@ -1,8 +1,9 @@
 name: unstick
 
 on:
-  schedule:
-    - cron: '0 5 * * *'
+  # scheduled runs disabled; trigger manually via workflow_dispatch
+  # schedule:
+  #   - cron: '0 5 * * *'
   workflow_dispatch:
     inputs:
       repo:
